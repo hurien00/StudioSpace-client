@@ -35,9 +35,14 @@ export default function LoginPage() {
         throw new Error(data.message || "Invalid email or password");
       }
 
+      // ✅ সফল লগইন হলে ইউজার ডাটা লোকালস্টোরেজে সেভ করা হলো
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+
       toast.success("Successfully logged in!");
       router.push("/");
-      router.refresh();
+      router.refresh(); // ✅ Navbar সাথে সাথে আপডেট করার জন্য
     } catch (err: any) {
       console.error("Sign In Error:", err);
       toast.error(err.message || "Login failed. Please try again.");

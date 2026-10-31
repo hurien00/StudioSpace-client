@@ -10,8 +10,9 @@ interface Studio {
   category: string;
   title: string;
   location: string;
-  price: number;
-  rating: number;
+  hourlyRate?: number; 
+  price?: number;      
+  rating?: number;
 }
 
 export default function FeaturedStudios() {
@@ -19,7 +20,6 @@ export default function FeaturedStudios() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-   
     fetch("http://localhost:8000/api/studios/featured")
       .then((res) => res.json())
       .then((data) => {
@@ -54,64 +54,69 @@ export default function FeaturedStudios() {
 
       {/* Studios Grid (3 columns on desktop) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {studios.map((studio) => (
-          <div
-            key={studio._id}
-            className="bg-white rounded-2xl overflow-hidden border border-neutral-200/80 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between"
-          >
-            {/* Image & Badges Container */}
-            <div className="relative h-56 w-full bg-neutral-100 overflow-hidden group">
-              <img
-                src={studio.image}
-                alt={studio.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
+        {studios.map((studio) => {
+          const displayPrice = studio.hourlyRate ?? studio.price ?? 0;
+          const displayRating = studio.rating ?? 4.8;
 
-              {/* Category Badge (Top-Left) */}
-              <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-neutral-900 text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
-                {studio.category}
-              </span>
+          return (
+            <div
+              key={studio._id}
+              className="bg-white rounded-2xl overflow-hidden border border-neutral-200/80 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between"
+            >
+              {/* Image & Badges Container */}
+              <div className="relative h-56 w-full bg-neutral-100 overflow-hidden group">
+                <img
+                  src={studio.image}
+                  alt={studio.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
 
-              {/* Rating Badge (Top-Right) */}
-              <span className="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-neutral-900 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
-                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                {studio.rating}
-              </span>
+                {/* Category Badge (Top-Left) */}
+                <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-neutral-900 text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
+                  {studio.category}
+                </span>
 
-              {/* Favorite Icon Button */}
-              <button className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md p-2 rounded-full shadow-sm hover:bg-white text-pink-500 transition-colors">
-                <Heart className="w-4 h-4" />
-              </button>
-            </div>
+                {/* Rating Badge (Top-Right) */}
+                <span className="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-neutral-900 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  {displayRating}
+                </span>
 
-            {/* Card Content */}
-            <div className="p-5 flex flex-col flex-grow justify-between">
-              <div>
-                <h3 className="text-base font-bold text-neutral-900 line-clamp-1">
-                  {studio.title}
-                </h3>
-                <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
-                  📍 {studio.location}
-                </p>
+                {/* Favorite Icon Button */}
+                <button className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md p-2 rounded-full shadow-sm hover:bg-white text-pink-500 transition-colors">
+                  <Heart className="w-4 h-4" />
+                </button>
               </div>
 
-              {/* Price & View Details CTA */}
-              <div className="flex items-center justify-between mt-6 pt-4 border-t border-neutral-100">
+              {/* Card Content */}
+              <div className="p-5 flex flex-col flex-grow justify-between">
                 <div>
-                  <span className="text-lg font-extrabold text-neutral-900">${studio.price}</span>
-                  <span className="text-xs text-neutral-500 font-medium"> / hr</span>
+                  <h3 className="text-base font-bold text-neutral-900 line-clamp-1">
+                    {studio.title}
+                  </h3>
+                  <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
+                    📍 {studio.location}
+                  </p>
                 </div>
 
-                <Link
-                  href={`/studios/${studio._id}`}
-                  className="px-4 py-2 rounded-full border border-neutral-300 hover:border-neutral-900 text-neutral-900 font-semibold text-xs transition-all hover:bg-neutral-900 hover:text-white"
-                >
-                  View Details
-                </Link>
+                {/* Price & View Details CTA */}
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-neutral-100">
+                  <div>
+                    <span className="text-lg font-extrabold text-neutral-900">৳{displayPrice}</span>
+                    <span className="text-xs text-neutral-500 font-medium"> / hr</span>
+                  </div>
+
+                  <Link
+                    href={`/studios/${studio._id}`}
+                    className="px-4 py-2 rounded-full border border-neutral-300 hover:border-neutral-900 text-neutral-900 font-semibold text-xs transition-all hover:bg-neutral-900 hover:text-white"
+                  >
+                    View Details
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* See All Studios Button */}

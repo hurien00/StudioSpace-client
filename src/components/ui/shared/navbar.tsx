@@ -1,26 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { Sun, Moon, Menu, X, LogOut, LayoutDashboard, PlusCircle, List, Calendar } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Sun, Moon, Menu, X, LogOut, LayoutDashboard, PlusCircle, List, Calendar, ChevronDown, User as UserIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface User {
   name: string;
   email: string;
   image?: string;
+  photoURL?: string;
 }
 
 interface NavbarProps {
@@ -28,25 +21,47 @@ interface NavbarProps {
   onLogout?: () => void;
 }
 
-export default function Navbar({ user = null, onLogout }: NavbarProps) {
+export default function Navbar({ user: propUser = null }: NavbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(propUser);
+  
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
-    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
-    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-    if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.classList.toggle("dark", savedTheme === "dark");
-    } else if (systemPrefersDark) {
-      setTheme("dark");
-      document.documentElement.classList.add("dark");
+    // localStorage থেকে ইউজারের তথ্য লোড করা
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        setCurrentUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Failed to parse user from localStorage");
+      }
     }
+
+    // বাইরে ক্লিক করলে ড্রপডাউন বন্ধ হবে
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setCurrentUser(null);
+    setIsProfileDropdownOpen(false);
+    router.push("/login");
+    router.refresh();
+  };
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
@@ -63,6 +78,7 @@ export default function Navbar({ user = null, onLogout }: NavbarProps) {
   ];
 
   const getInitials = (name: string) => {
+    if (!name) return "US";
     return name
       .split(" ")
       .map((n) => n[0])
@@ -116,7 +132,6 @@ export default function Navbar({ user = null, onLogout }: NavbarProps) {
 
           {/* Right Action Area */}
           <div className="hidden md:flex items-center gap-3">
-            {/* Theme Toggle Button */}
             {mounted && (
               <Button
                 variant="outline"
@@ -133,59 +148,84 @@ export default function Navbar({ user = null, onLogout }: NavbarProps) {
               </Button>
             )}
 
-            {/* Authenticated State vs Unauthenticated State */}
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={user.image} alt={user.name} />
-                      <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.name}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+            {/* Authenticated State with Custom Safe Dropdown */}
+            {currentUser ? (
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                  className="flex items-center gap-2 h-10 px-2 rounded-full hover:bg-muted transition cursor-pointer outline-none border border-transparent hover:border-border"
+                >
+                  <Avatar className="h-9 w-9 border border-border">
+                    <AvatarImage src={currentUser.image || currentUser.photoURL} alt={currentUser.name} />
+                    <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-bold text-foreground">{currentUser.name?.split(" ")[0]}</span>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isProfileDropdownOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {/* Custom Dropdown Menu Card */}
+                {isProfileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-60 bg-card border border-border rounded-2xl p-2 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2">
+                    <div className="px-3 py-2.5 border-b border-border/60 mb-1">
+                      <p className="text-sm font-bold text-foreground">{currentUser.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{currentUser.email}</p>
                     </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard" className="cursor-pointer">
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      <span>Dashboard</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/add-studio" className="cursor-pointer">
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      <span>Add New Studio</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/my-listings" className="cursor-pointer">
-                      <List className="mr-2 h-4 w-4" />
-                      <span>My Studio Listings</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/my-bookings" className="cursor-pointer">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      <span>My Bookings</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={onLogout}
-                    className="text-destructive focus:text-destructive cursor-pointer"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Logout</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+
+                    <div className="space-y-0.5">
+                      <Link
+                        href="/profile"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition"
+                      >
+                        <UserIcon className="h-4 w-4 text-muted-foreground" />
+                        <span>My Profile</span>
+                      </Link>
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition"
+                      >
+                        <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
+                        <span>Dashboard</span>
+                      </Link>
+                      <Link
+                        href="/add-studio"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition"
+                      >
+                        <PlusCircle className="h-4 w-4 text-muted-foreground" />
+                        <span>Add New Studio</span>
+                      </Link>
+                      <Link
+                        href="/my-listings"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition"
+                      >
+                        <List className="h-4 w-4 text-muted-foreground" />
+                        <span>My Studio Listings</span>
+                      </Link>
+                      <Link
+                        href="/my-bookings"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-xl transition"
+                      >
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span>My Bookings</span>
+                      </Link>
+                    </div>
+
+                    <div className="my-1 border-t border-border/60" />
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition cursor-pointer"
+                    >
+                      <LogOut className="h-4 w-4 text-red-500" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
                 <Button variant="outline" className="rounded-full px-5" asChild>
@@ -236,40 +276,43 @@ export default function Navbar({ user = null, onLogout }: NavbarProps) {
           ))}
 
           <div className="pt-4 border-t border-border flex flex-col gap-2">
-            {user ? (
+            {currentUser ? (
               <>
-                <div className="flex items-center gap-3 py-2">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.image} alt={user.name} />
-                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                <div className="flex items-center gap-3 py-2 bg-muted/50 p-3 rounded-2xl">
+                  <Avatar className="h-10 w-10 border border-border">
+                    <AvatarImage src={currentUser.image || currentUser.photoURL} alt={currentUser.name} />
+                    <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-sm font-semibold text-foreground">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                    <p className="text-sm font-bold text-foreground">{currentUser.name}</p>
+                    <p className="text-xs text-muted-foreground">{currentUser.email}</p>
                   </div>
                 </div>
-                <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="py-2 text-sm text-foreground flex items-center gap-2">
-                  <LayoutDashboard className="h-4 w-4" /> Dashboard
+                <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)} className="py-2.5 px-3 text-sm text-foreground flex items-center gap-2 hover:bg-muted rounded-xl">
+                  <UserIcon className="h-4 w-4 text-muted-foreground" /> আমার প্রোফাইল
                 </Link>
-                <Link href="/add-studio" onClick={() => setIsMobileMenuOpen(false)} className="py-2 text-sm text-foreground flex items-center gap-2">
-                  <PlusCircle className="h-4 w-4" /> Add New Studio
+                <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="py-2.5 px-3 text-sm text-foreground flex items-center gap-2 hover:bg-muted rounded-xl">
+                  <LayoutDashboard className="h-4 w-4 text-muted-foreground" /> Dashboard
                 </Link>
-                <Link href="/my-listings" onClick={() => setIsMobileMenuOpen(false)} className="py-2 text-sm text-foreground flex items-center gap-2">
-                  <List className="h-4 w-4" /> My Studio Listings
+                <Link href="/add-studio" onClick={() => setIsMobileMenuOpen(false)} className="py-2.5 px-3 text-sm text-foreground flex items-center gap-2 hover:bg-muted rounded-xl">
+                  <PlusCircle className="h-4 w-4 text-muted-foreground" /> Add New Studio
                 </Link>
-                <Link href="/my-bookings" onClick={() => setIsMobileMenuOpen(false)} className="py-2 text-sm text-foreground flex items-center gap-2">
-                  <Calendar className="h-4 w-4" /> My Bookings
+                <Link href="/my-listings" onClick={() => setIsMobileMenuOpen(false)} className="py-2.5 px-3 text-sm text-foreground flex items-center gap-2 hover:bg-muted rounded-xl">
+                  <List className="h-4 w-4 text-muted-foreground" /> My Studio Listings
+                </Link>
+                <Link href="/my-bookings" onClick={() => setIsMobileMenuOpen(false)} className="py-2.5 px-3 text-sm text-foreground flex items-center gap-2 hover:bg-muted rounded-xl">
+                  <Calendar className="h-4 w-4 text-muted-foreground" /> My Bookings
                 </Link>
                 <Button
                   variant="destructive"
                   size="sm"
                   onClick={() => {
                     setIsMobileMenuOpen(false);
-                    if (onLogout) onLogout();
+                    handleLogout();
                   }}
-                  className="w-full mt-2 justify-start"
+                  className="w-full mt-2 justify-start rounded-xl font-semibold bg-red-600 hover:bg-red-700 text-white"
                 >
-                  <LogOut className="mr-2 h-4 w-4" /> Logout
+                  <LogOut className="mr-2 h-4 w-4" /> Sign Out
                 </Button>
               </>
             ) : (
