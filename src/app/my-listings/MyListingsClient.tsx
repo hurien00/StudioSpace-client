@@ -176,7 +176,7 @@ export default function MyListingsClient() {
                   className="rounded-xl gap-1.5 text-xs font-bold"
                   asChild
                 >
-                  <Link href={`/studios/update/${studio._id}`}>
+                  <Link href={`/studios/edit/${studio._id}`}>
                     <Edit className="w-3.5 h-3.5 text-blue-500" /> Update
                   </Link>
                 </Button>
