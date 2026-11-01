@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Suspense } from "react"; 
 import Navbar from "@/components/ui/shared/navbar";
 import Footer from "@/components/ui/shared/footer";
-
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,11 +32,16 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground transition-colors duration-300">
-        <Navbar />
+        
+        <Suspense fallback={<div className="h-16 w-full bg-background" />}>
+          <Navbar />
+        </Suspense>
+
         <main className="grow">
           {children}
         </main>
-        <Footer/>
+        
+        <Footer />
       </body>
     </html>
   );

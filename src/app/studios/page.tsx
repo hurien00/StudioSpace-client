@@ -20,7 +20,7 @@ export default function ExploreStudiosPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    // ব্যাকএন্ড থেকে সমস্ত স্টুডিও ফেচ করা
+    
     fetch("http://localhost:8000/api/studios")
       .then((res) => res.json())
       .then((data) => {
@@ -33,7 +33,6 @@ export default function ExploreStudiosPage() {
       });
   }, []);
 
-  // সার্চ বা ফিল্টারিং লজিক (অপশনাল কিন্তু কাজের)
   const filteredStudios = studios.filter((studio) =>
     studio.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     studio.category.toLowerCase().includes(searchQuery.toLowerCase()) ||

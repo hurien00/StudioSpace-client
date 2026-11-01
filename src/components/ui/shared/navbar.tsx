@@ -35,7 +35,6 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
   useEffect(() => {
     setMounted(true);
 
-    // localStorage থেকে ইউজারের তথ্য লোড করা
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
@@ -45,7 +44,6 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
       }
     }
 
-    // বাইরে ক্লিক করলে ড্রপডাউন বন্ধ হবে
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsProfileDropdownOpen(false);

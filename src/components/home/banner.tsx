@@ -50,7 +50,6 @@ export default function Banner() {
     },
   ];
 
-  // প্রি-রেন্ডারিং বা হাইড্রেশন এরর এড়াতে ব্রাউজারে মাউন্ট হওয়ার আগে লোডিং বা স্কেলেটন দেখাবে
   if (!mounted) {
     return (
       <section className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
