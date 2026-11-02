@@ -8,6 +8,12 @@ import { Sun, Moon, Menu, X, LogOut, LayoutDashboard, PlusCircle, List, Calendar
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  AUTH_CHANGE_EVENT,
+  clearSession,
+  getStoredUser,
+  setAuthCookie,
+} from "@/lib/auth-session";
 
 interface User {
   name: string;
@@ -35,15 +41,6 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
   useEffect(() => {
     setMounted(true);
 
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        setCurrentUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Failed to parse user from localStorage");
-      }
-    }
-
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsProfileDropdownOpen(false);
@@ -53,8 +50,35 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Keep the navbar in sync with auth changes and client-side navigation.
+  // The layout never remounts on navigation, which is why the profile menu
+  // used to stay hidden until a full refresh.
+  useEffect(() => {
+    const syncUser = () => {
+      const storedUser = getStoredUser();
+
+      // Heal sessions created before the auth cookie existed so the
+      // middleware stops bouncing logged-in users to /login.
+      if (storedUser?.email) {
+        setAuthCookie(storedUser.email);
+      }
+
+      setCurrentUser(storedUser ?? propUser);
+    };
+
+    syncUser();
+
+    window.addEventListener(AUTH_CHANGE_EVENT, syncUser);
+    window.addEventListener("storage", syncUser);
+
+    return () => {
+      window.removeEventListener(AUTH_CHANGE_EVENT, syncUser);
+      window.removeEventListener("storage", syncUser);
+    };
+  }, [pathname, propUser]);
+
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    clearSession();
     setCurrentUser(null);
     setIsProfileDropdownOpen(false);
     router.push("/login");

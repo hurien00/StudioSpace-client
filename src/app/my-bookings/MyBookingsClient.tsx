@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   Calendar, 
   Clock, 
   MapPin, 
   XCircle, 
   CheckCircle2, 
-  AlertCircle, 
   Layers 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,18 +26,37 @@ interface Booking {
 }
 
 export default function MyBookingsClient() {
+  const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
-
-  const userEmail = "hurienj51@gmail.com"; // Dynamic user email can be used here
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchBookings();
-  }, [userEmail]);
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) {
+     sessionStorage.setItem("redirectPath", window.location.pathname);
+    router.push("/login");
+    return;
+    }
 
-  const fetchBookings = () => {
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      if (parsedUser?.email) {
+        setUserEmail(parsedUser.email);
+      } else {
+        router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      }
+    } catch (error) {
+      console.error("Failed to parse user session data:", error);
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (!userEmail) return;
+
     setLoading(true);
     fetch(`http://localhost:8000/api/bookings?email=${userEmail}`)
       .then((res) => res.json())
@@ -51,7 +70,7 @@ export default function MyBookingsClient() {
         console.error("Error fetching bookings:", err);
         setLoading(false);
       });
-  };
+  }, [userEmail]);
 
   const handleCancelBooking = (id: string) => {
     setCancellingId(id);
@@ -122,8 +141,6 @@ export default function MyBookingsClient() {
 
   return (
     <div className="w-full min-h-screen bg-background pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pt-10 relative">
-      
-      {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-emerald-500 text-white shadow-xl animate-in fade-in">
           <CheckCircle2 className="w-5 h-5 shrink-0" />
@@ -131,7 +148,6 @@ export default function MyBookingsClient() {
         </div>
       )}
 
-      {/* Header */}
       <div className="mb-8 pb-6 border-b border-border">
         <h1 className="text-3xl font-black text-foreground tracking-tight">My Bookings</h1>
         <p className="text-xs text-muted-foreground mt-1">
@@ -192,7 +208,6 @@ export default function MyBookingsClient() {
                 </div>
               </div>
 
-              {/* Action Area: Show cancel button ONLY if status is Pending */}
               <div className="p-5 pt-2 border-t border-border mt-3 flex items-center justify-between">
                 <span className="text-[11px] text-muted-foreground font-medium">
                   ID: {booking._id.slice(-6)}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   Trash2, 
   Edit, 
@@ -13,6 +14,7 @@ import {
   Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getStoredUser } from "@/lib/auth-session";
 
 interface Studio {
   _id: string;
@@ -27,8 +29,10 @@ interface Studio {
 }
 
 export default function MyListingsClient() {
+  const router = useRouter();
   const [listings, setListings] = useState<Studio[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   
   // Delete Modal States
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -36,15 +40,9 @@ export default function MyListingsClient() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const userEmail = "hurienj51@gmail.com"; 
-
-  useEffect(() => {
-    fetchListings();
-  }, [userEmail]);
-
-  const fetchListings = () => {
+  const fetchListings = (email: string) => {
     setLoading(true);
-    fetch(`http://localhost:8000/api/studios/my-listings?email=${userEmail}`)
+    fetch(`http://localhost:8000/api/studios/my-listings?email=${encodeURIComponent(email)}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -57,6 +55,19 @@ export default function MyListingsClient() {
         setLoading(false);
       });
   };
+
+  useEffect(() => {
+    const storedUser = getStoredUser();
+    if (storedUser?.email) {
+      setUserEmail(storedUser.email);
+    } else {
+      router.replace("/login?callbackUrl=/my-listings");
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (userEmail) fetchListings(userEmail);
+  }, [userEmail]);
 
   const confirmDelete = (id: string) => {
     setStudioToDelete(id);
