@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   Star, 
   MapPin, 
@@ -38,6 +39,7 @@ interface Studio {
 }
 
 export default function StudioDetailClient({ studioId }: { studioId: string }) {
+  const router = useRouter();
   const [studio, setStudio] = useState<Studio | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -47,7 +49,8 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
   const [bookingDate, setBookingDate] = useState("");
   const [bookingHours, setBookingHours] = useState(2);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [bookingSuccess, setBookingSuccess] = useState(false);
+
+  const userEmail = "hurienj51@gmail.com";
 
   useEffect(() => {
     let isMounted = true;
@@ -119,10 +122,38 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
   const handleBookingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setBookingSuccess(true);
-    }, 1000);
+
+    const bookingPayload = {
+      studioId: studio._id,
+      studioTitle: studio.title,
+      studioImage: mainImage,
+      location: studio.location,
+      date: bookingDate,
+      timeSlot: `${bookingHours} Hours`,
+      totalPrice: totalPrice,
+      userEmail: userEmail,
+    };
+
+    fetch("http://localhost:8000/api/bookings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(bookingPayload),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to create booking");
+        return res.json();
+      })
+      .then(() => {
+        setIsSubmitting(false);
+        setIsBookingOpen(false);
+        router.push("/my-bookings");
+      })
+      .catch((err) => {
+        console.error("Booking error:", err);
+        setIsSubmitting(false);
+      });
   };
 
   return (
@@ -163,7 +194,6 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
           </p>
         </div>
 
-        {/* Gallery Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-[350px] sm:h-[450px] rounded-3xl overflow-hidden shadow-lg border border-border">
           <div 
             className="md:col-span-2 relative h-full bg-muted cursor-pointer group overflow-hidden"
@@ -183,7 +213,6 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
           </div>
         </div>
 
-        {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-8 space-y-10">
             <div className="grid grid-cols-3 gap-4 p-6 rounded-3xl bg-card border border-border text-center shadow-xs">
@@ -248,7 +277,6 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
             </div>
           </div>
 
-          {/* Sidebar */}
           <div className="lg:col-span-4">
             <div className="sticky top-24 rounded-3xl border border-border bg-card p-6 shadow-xl space-y-6">
               <div className="flex items-baseline justify-between border-b border-border pb-4">
@@ -271,54 +299,42 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
         </div>
       </div>
 
-      {/* Booking Modal */}
       {isBookingOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
           <div className="bg-card border border-border w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl relative">
-            <button onClick={() => { setIsBookingOpen(false); setBookingSuccess(false); }} className="absolute top-5 right-5 p-2 rounded-full hover:bg-muted text-muted-foreground transition">
+            <button onClick={() => setIsBookingOpen(false)} className="absolute top-5 right-5 p-2 rounded-full hover:bg-muted text-muted-foreground transition">
               <X className="w-5 h-5" />
             </button>
 
-            {bookingSuccess ? (
-              <div className="text-center py-8 space-y-4">
-                <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20">
-                  <CheckCircle2 className="w-10 h-10" />
-                </div>
-                <h3 className="text-2xl font-black text-foreground">Booking Confirmed!</h3>
-                <p className="text-xs text-muted-foreground max-w-xs mx-auto">Your reservation request for {studio.title} has been logged.</p>
-                <Button onClick={() => setIsBookingOpen(false)} className="rounded-full w-full mt-4 font-bold">Done</Button>
+            <form onSubmit={handleBookingSubmit} className="space-y-5">
+              <div>
+                <h3 className="text-xl font-bold text-foreground">Reserve {studio.title}</h3>
+                <p className="text-xs text-muted-foreground mt-1">Select date and hours for booking.</p>
               </div>
-            ) : (
-              <form onSubmit={handleBookingSubmit} className="space-y-5">
+              <div className="space-y-4">
                 <div>
-                  <h3 className="text-xl font-bold text-foreground">Reserve {studio.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Select date and hours for booking.</p>
+                  <label className="block text-xs font-bold text-foreground mb-1.5">Select Date</label>
+                  <input type="date" required value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} className="w-full px-4 py-3 rounded-2xl bg-background border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary" />
                 </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-foreground mb-1.5">Select Date</label>
-                    <input type="date" required value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} className="w-full px-4 py-3 rounded-2xl bg-background border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary" />
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1.5">Duration (Hours)</label>
+                  <input type="number" min="1" max="12" value={bookingHours} onChange={(e) => setBookingHours(Number(e.target.value))} className="w-full px-4 py-3 rounded-2xl bg-background border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
+                <div className="p-4 rounded-2xl bg-muted/50 border border-border space-y-2 text-xs">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>৳{rate} x {bookingHours} hours</span>
+                    <span>৳{totalPrice}</span>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-foreground mb-1.5">Duration (Hours)</label>
-                    <input type="number" min="1" max="12" value={bookingHours} onChange={(e) => setBookingHours(Number(e.target.value))} className="w-full px-4 py-3 rounded-2xl bg-background border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary" />
-                  </div>
-                  <div className="p-4 rounded-2xl bg-muted/50 border border-border space-y-2 text-xs">
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>৳{rate} x {bookingHours} hours</span>
-                      <span>৳{totalPrice}</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-foreground text-sm pt-2 border-t border-border">
-                      <span>Total</span>
-                      <span className="text-primary">৳{totalPrice}</span>
-                    </div>
+                  <div className="flex justify-between font-bold text-foreground text-sm pt-2 border-t border-border">
+                    <span>Total</span>
+                    <span className="text-primary">৳{totalPrice}</span>
                   </div>
                 </div>
-                <Button type="submit" disabled={isSubmitting} className="w-full rounded-full py-6 font-bold bg-pink-500 hover:bg-pink-600 text-white">
-                  {isSubmitting ? "Confirming..." : "Confirm & Pay"}
-                </Button>
-              </form>
-            )}
+              </div>
+              <Button type="submit" disabled={isSubmitting} className="w-full rounded-full py-6 font-bold bg-pink-500 hover:bg-pink-600 text-white">
+                {isSubmitting ? "Confirming & Saving..." : "Confirm & Pay"}
+              </Button>
+            </form>
           </div>
         </div>
       )}

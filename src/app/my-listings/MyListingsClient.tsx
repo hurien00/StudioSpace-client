@@ -116,7 +116,7 @@ export default function MyListingsClient() {
         <div>
           <h1 className="text-3xl font-black text-foreground tracking-tight">My Studio Listings</h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Manage your uploaded spaces, update details, or remove listings from MongoDB.
+            Manage your uploaded spaces, update details, or remove from listings .
           </p>
         </div>
         <Button className="rounded-full gap-2 font-bold px-6" asChild>
