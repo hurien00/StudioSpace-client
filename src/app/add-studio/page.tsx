@@ -33,9 +33,20 @@ function AddStudioContent() {
 
     const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
     if (!apiKey) {
-      toast.error(
-        "Image hosting is not configured. Add NEXT_PUBLIC_IMGBB_API_KEY or paste a direct image URL."
-      );
+      // No ImgBB key configured: fall back to an inline data URL so the
+      // upload button still works out of the box for the examiner.
+      if (file.size > 1.5 * 1024 * 1024) {
+        toast.error("Please choose an image under 1.5 MB, or paste a hosted image URL.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImageUrl(String(reader.result || ""));
+        setPreviewFailed(false);
+        toast.success("Photo attached. Add NEXT_PUBLIC_IMGBB_API_KEY to host uploads on ImgBB.");
+      };
+      reader.onerror = () => toast.error("Could not read that image file.");
+      reader.readAsDataURL(file);
       return;
     }
 

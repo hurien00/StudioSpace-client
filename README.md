@@ -8,7 +8,7 @@ Creators, filmmakers, photographers, podcasters and musicians can discover studi
 | --- | --- |
 | **Live website** | https://studio-space-bice.vercel.app |
 | **Live API** | https://studio-space-backend-two.vercel.app |
-| **Client repository** | https://github.com/hurien00/StudioSpace |
+| **Client repository** | https://github.com/hurien00/StudioSpace-client |
 | **Server repository** | https://github.com/hurien00/StudioSpace-server |
 
 ## Examiner test credentials
@@ -48,7 +48,7 @@ You can also register a new account from [/register](https://studio-space-bice.v
 ### 1. Client
 
 ```bash
-git clone https://github.com/hurien00/StudioSpace.git
+git clone https://github.com/hurien00/StudioSpace-client.git
 cd StudioSpace
 npm install
 cp .env.example .env
