@@ -23,7 +23,7 @@ export default function StudioCategories() {
           return (
             <Link
               key={cat.name}
-              href={`/categories/${encodeURIComponent(cat.name)}`}
+              href={`/studios?category=${encodeURIComponent(cat.name)}`}
               className="p-6 rounded-3xl bg-card border border-border hover:border-primary/50 shadow-xs hover:shadow-md transition flex flex-col items-center text-center group cursor-pointer"
             >
               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border mb-3 group-hover:scale-110 transition duration-300 ${cat.color}`}>

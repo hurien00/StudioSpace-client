@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Star, Heart, Search, MapPin } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Studio {
   _id: string;
@@ -16,13 +19,41 @@ interface Studio {
   rating?: number;
 }
 
+const CATEGORY_FILTERS = [
+  "Photo Studio",
+  "Film Stage",
+  "Podcast Lounge",
+  "Music Suite",
+  "Workshop",
+];
+
 export default function ExploreStudiosPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="w-full min-h-[75vh] flex items-center justify-center">
+          <p className="text-muted-foreground animate-pulse text-sm font-bold">
+            Loading studios...
+          </p>
+        </div>
+      }
+    >
+      <ExploreStudiosContent />
+    </Suspense>
+  );
+}
+
+function ExploreStudiosContent() {
+  const searchParams = useSearchParams();
   const [studios, setStudios] = useState<Studio[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState(
+    searchParams.get("category") ?? ""
+  );
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/studios")
+    fetch(`${API_BASE_URL}/api/studios`)
       .then((res) => res.json())
       .then((data) => {
         setStudios(data);
@@ -34,16 +65,34 @@ export default function ExploreStudiosPage() {
       });
   }, []);
 
-  const filteredStudios = studios.filter((studio) =>
-    studio.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    studio.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    studio.location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const applyCategory = (category: string) => {
+    setActiveCategory(category);
+    const url = new URL(window.location.href);
+    if (category) {
+      url.searchParams.set("category", category);
+    } else {
+      url.searchParams.delete("category");
+    }
+    window.history.replaceState(null, "", url.toString());
+  };
+
+  const filteredStudios = studios.filter((studio) => {
+    const matchesCategory =
+      !activeCategory ||
+      studio.category?.toLowerCase() === activeCategory.toLowerCase();
+    const query = searchQuery.toLowerCase();
+    const matchesQuery =
+      studio.title?.toLowerCase().includes(query) ||
+      studio.category?.toLowerCase().includes(query) ||
+      studio.location?.toLowerCase().includes(query);
+
+    return matchesCategory && matchesQuery;
+  });
 
   return (
     <main className="min-h-screen bg-background text-foreground py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
               Explore Studios
@@ -63,6 +112,34 @@ export default function ExploreStudiosPage() {
               className="w-full pl-10 pr-4 py-2.5 rounded-full border border-border bg-card text-sm focus:outline-none focus:border-primary shadow-sm transition-all"
             />
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 mb-8">
+          <button
+            type="button"
+            onClick={() => applyCategory("")}
+            className={`px-4 py-2 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
+              activeCategory === ""
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card text-muted-foreground border-border hover:text-foreground"
+            }`}
+          >
+            All categories
+          </button>
+          {CATEGORY_FILTERS.map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => applyCategory(category)}
+              className={`px-4 py-2 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
+                activeCategory.toLowerCase() === category.toLowerCase()
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card text-muted-foreground border-border hover:text-foreground"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
         </div>
 
         {loading ? (
@@ -106,7 +183,12 @@ export default function ExploreStudiosPage() {
                       {studio.rating ?? 4.9}
                     </span>
 
-                    <button className="absolute bottom-3 right-3 bg-card/90 backdrop-blur-md p-2 rounded-full shadow-sm hover:bg-card text-pink-500 transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => toast.success(`${studio.title} saved to your wishlist!`)}
+                      aria-label={`Save ${studio.title}`}
+                      className="absolute bottom-3 right-3 bg-card/90 backdrop-blur-md p-2 rounded-full shadow-sm hover:bg-card text-pink-500 transition-colors cursor-pointer"
+                    >
                       <Heart className="w-4 h-4" />
                     </button>
                   </div>
@@ -123,7 +205,7 @@ export default function ExploreStudiosPage() {
 
                     <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/60">
                       <div>
-                        <span className="text-lg font-extrabold">৳{displayRate}</span>
+                        <span className="text-lg font-extrabold">${displayRate}</span>
                         <span className="text-xs opacity-70 font-medium"> / hr</span>
                       </div>
 
@@ -142,12 +224,20 @@ export default function ExploreStudiosPage() {
         ) : (
           <div className="text-center py-20 bg-card rounded-3xl border border-border mt-6 shadow-sm">
             <p className="text-xl font-bold">No studios found</p>
-            <p className="text-sm opacity-70 mt-1">Try searching with a different keyword or check back later.</p>
+            <p className="text-sm opacity-70 mt-1">
+              {activeCategory
+                ? `No ${activeCategory} listings match your search yet. Try another category or clear the filters.`
+                : "Try searching with a different keyword or check back later."}
+            </p>
             <button
-              onClick={() => setSearchQuery("")}
-              className="mt-6 px-6 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all shadow-md"
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                applyCategory("");
+              }}
+              className="mt-6 px-6 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all shadow-md cursor-pointer"
             >
-              Reset Search
+              Reset Filters
             </button>
           </div>
         )}

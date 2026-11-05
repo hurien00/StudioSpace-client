@@ -4,17 +4,25 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState, useEffect, FormEvent } from "react";
+import { toast } from "sonner";
+import { useEffect, useState, type FormEvent } from "react";
 
 export default function Footer() {
   const [currentYear, setCurrentYear] = useState<number | null>(null);
 
   useEffect(() => {
+    // Reading the clock during prerender is disallowed; update after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentYear(new Date().getFullYear());
   }, []);
 
   const handleNewsletterSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const email = new FormData(e.currentTarget).get("newsletter-email");
+    toast.success(
+      `You're on the list${email ? ` — we'll email ${email}` : ""}. New studio drops every week.`
+    );
+    e.currentTarget.reset();
   };
 
   return (
@@ -52,7 +60,7 @@ export default function Footer() {
                 <Link href="/studios" className="hover:text-foreground transition-colors">Explore Studios</Link>
               </li>
               <li>
-                <Link href="/#how-it-works" className="hover:text-foreground transition-colors">How It Works</Link>
+                <Link href="/how-it-works" className="hover:text-foreground transition-colors">How It Works</Link>
               </li>
               <li>
                 <Link href="/about" className="hover:text-foreground transition-colors">About Us</Link>
@@ -68,13 +76,13 @@ export default function Footer() {
                 <Link href="/studios?category=Photo+Studio" className="hover:text-foreground transition-colors">Photo Studios</Link>
               </li>
               <li>
-                <Link href="/studios?category=Podcast+Room" className="hover:text-foreground transition-colors">Podcast Rooms</Link>
+                <Link href="/studios?category=Podcast+Lounge" className="hover:text-foreground transition-colors">Podcast Rooms</Link>
               </li>
               <li>
                 <Link href="/studios?category=Music+Suite" className="hover:text-foreground transition-colors">Music Suites</Link>
               </li>
               <li>
-                <Link href="/studios?category=Art+Workshop" className="hover:text-foreground transition-colors">Art Workshops</Link>
+                <Link href="/studios?category=Workshop" className="hover:text-foreground transition-colors">Art Workshops</Link>
               </li>
             </ul>
           </div>
@@ -84,6 +92,7 @@ export default function Footer() {
             <h3 className="text-sm font-semibold tracking-wider uppercase">Get new listings</h3>
             <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-2">
               <Input
+                name="newsletter-email"
                 type="email"
                 placeholder="you@email.com"
                 required
