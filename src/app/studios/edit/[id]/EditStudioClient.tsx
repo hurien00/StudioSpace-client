@@ -68,8 +68,15 @@ export default function EditStudioClient({ studioId }: { studioId: string }) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(formData),
+      credentials: "include",
     })
       .then((res) => {
+        if (res.status === 401) {
+          router.push(
+            `/login?callbackUrl=${encodeURIComponent(`/studios/edit/${studioId}`)}`
+          );
+          throw new Error("401 Unauthorized");
+        }
         if (!res.ok) throw new Error("Failed to update studio");
         return res.json();
       })

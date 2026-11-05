@@ -58,8 +58,17 @@ export default function MyListingsClient() {
       setLoading(true);
       try {
         const res = await fetch(
-          `http://localhost:8000/api/studios/my-listings?email=${encodeURIComponent(userEmail)}`
+          `http://localhost:8000/api/studios/my-listings?email=${encodeURIComponent(userEmail)}`,
+          { credentials: "include" }
         );
+
+        if (res.status === 401) {
+          if (!cancelled) {
+            router.replace("/login?callbackUrl=/my-listings");
+          }
+          return;
+        }
+
         const data = await res.json();
         if (!cancelled && Array.isArray(data)) {
           setListings(data);
@@ -76,7 +85,7 @@ export default function MyListingsClient() {
     return () => {
       cancelled = true;
     };
-  }, [userEmail]);
+  }, [userEmail, router]);
 
   const confirmDelete = (id: string) => {
     setStudioToDelete(id);
@@ -89,8 +98,13 @@ export default function MyListingsClient() {
 
     fetch(`http://localhost:8000/api/studios/${studioToDelete}`, {
       method: "DELETE",
+      credentials: "include",
     })
       .then((res) => {
+        if (res.status === 401) {
+          router.push("/login?callbackUrl=/my-listings");
+          throw new Error("401 Unauthorized");
+        }
         if (!res.ok) throw new Error("Failed to delete studio");
         return res.json();
       })

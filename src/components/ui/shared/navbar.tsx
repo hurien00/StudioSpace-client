@@ -12,7 +12,9 @@ import ThemeToggle from "@/components/ui/shared/theme-toggle";
 import { authClient } from "@/lib/auth-client";
 import {
   AUTH_CHANGE_EVENT,
+  clearAuthToken,
   clearSession,
+  ensureAuthToken,
   getStoredUser,
   setAuthCookie,
 } from "@/lib/auth-session";
@@ -37,6 +39,7 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(propUser);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const tokenCheckedRef = useRef(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -54,6 +57,13 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
 
       if (storedUser?.email) {
         setAuthCookie(storedUser.email);
+
+        // Re-establish the HTTPOnly JWT cookie once per page load for users
+        // who already had a Better Auth session before this was introduced.
+        if (!tokenCheckedRef.current) {
+          tokenCheckedRef.current = true;
+          void ensureAuthToken();
+        }
       }
 
       setCurrentUser(storedUser ?? propUser);
@@ -76,6 +86,7 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
     clearSession();
     setCurrentUser(null);
     setIsProfileDropdownOpen(false);
+    void clearAuthToken();
     void authClient.signOut().catch(() => undefined);
     router.push("/login");
     router.refresh();

@@ -21,7 +21,9 @@ interface Booking {
   studioImage: string;
   location: string;
   date: string;
-  timeSlot: string;
+  timeSlot?: string;
+  startTime?: string;
+  hours?: number;
   totalPrice: number;
   status: "Pending" | "Confirmed" | "Completed" | "Cancelled";
   userEmail: string;
@@ -50,7 +52,7 @@ export default function MyBookingsClient() {
     const fetchBookings = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`http://localhost:8000/api/bookings?email=${encodeURIComponent(userEmail)}`, {
+        const res = await fetch("http://localhost:8000/api/bookings", {
           method: "GET",
           credentials: "include", 
         });
@@ -162,7 +164,7 @@ export default function MyBookingsClient() {
       <div className="mb-8 pb-6 border-b border-border">
         <h1 className="text-3xl font-black text-foreground tracking-tight">My Bookings</h1>
         <p className="text-xs text-muted-foreground mt-1">
-          View your reserved studio slots, track reservation status, or cancel pending bookings.
+          View your reserved studio slots, track reservation status, or cancel bookings.
         </p>
       </div>
 
@@ -175,7 +177,7 @@ export default function MyBookingsClient() {
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
             You haven&apos;t reserved any studio spaces yet. Explore available studios and book your slot!
           </p>
-          <Button className="rounded-full px-6 mt-2" asChild>
+          <Button className="rounded-full px-6 mt-2 cursor-pointer" asChild>
             <Link href="/studios">Explore Studios</Link>
           </Button>
         </div>
@@ -212,7 +214,8 @@ export default function MyBookingsClient() {
                       <Calendar className="w-3.5 h-3.5 text-primary shrink-0" /> Date: {booking.date}
                     </p>
                     <p className="flex items-center gap-1.5 font-medium text-foreground">
-                      <Clock className="w-3.5 h-3.5 text-primary shrink-0" /> Slot: {booking.timeSlot}
+                      <Clock className="w-3.5 h-3.5 text-primary shrink-0" /> 
+                      Time: {booking.startTime ? `${booking.startTime} (${booking.hours || 1} hrs)` : booking.timeSlot || "N/A"}
                     </p>
                   </div>
 
@@ -226,12 +229,12 @@ export default function MyBookingsClient() {
                 <span className="text-[11px] text-muted-foreground font-medium">
                   ID: {booking._id.slice(-6)}
                 </span>
-                {booking.status === "Pending" ? (
+                {booking.status === "Pending" || booking.status === "Confirmed" ? (
                   <Button 
                     variant="outline" 
                     size="sm" 
                     disabled={cancellingId === booking._id}
-                    className="rounded-xl gap-1.5 text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-500/10 border-red-500/20"
+                    className="rounded-xl gap-1.5 text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-500/10 border-red-500/20 cursor-pointer"
                     onClick={() => handleCancelBooking(booking._id)}
                   >
                     <XCircle className="w-3.5 h-3.5" /> 
@@ -239,7 +242,7 @@ export default function MyBookingsClient() {
                   </Button>
                 ) : (
                   <span className="text-xs font-bold text-muted-foreground italic">
-                    {booking.status === "Cancelled" ? "Cancelled" : "Locked"}
+                    {booking.status === "Cancelled" ? "Cancelled" : "Completed"}
                   </span>
                 )}
               </div>

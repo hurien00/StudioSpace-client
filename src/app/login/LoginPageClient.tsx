@@ -6,7 +6,13 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Mail, Lock, ArrowRight } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { getStoredUser, saveUser, setAuthCookie } from "@/lib/auth-session";
+import {
+  clearSession,
+  ensureAuthToken,
+  getStoredUser,
+  saveUser,
+  setAuthCookie,
+} from "@/lib/auth-session";
 
 export default function LoginPageClient() {
   const router = useRouter();
@@ -19,10 +25,29 @@ export default function LoginPageClient() {
 
   useEffect(() => {
     const storedUser = getStoredUser();
-    if (storedUser) {
-      setAuthCookie(storedUser.email || "authenticated");
+    if (!storedUser) return;
+
+    setAuthCookie(storedUser.email || "authenticated");
+
+    let cancelled = false;
+
+    // Refresh the HTTPOnly JWT cookie before entering a private page. If the
+    // Better Auth session has expired, clear the stale local session instead
+    // of sending the user into pages whose API calls would return 401.
+    void ensureAuthToken().then((ok) => {
+      if (cancelled) return;
+
+      if (!ok) {
+        clearSession();
+        return;
+      }
+
       router.replace(redirectTo);
-    }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [router, redirectTo]);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -56,6 +81,16 @@ export default function LoginPageClient() {
         email: authUser?.email ?? email,
         image: authUser?.image ?? undefined,
       });
+
+      // Establish the HTTPOnly JWT cookie used by the Express API.
+      const tokenReady = await ensureAuthToken();
+      if (!tokenReady) {
+        clearSession();
+        toast.error("Could not start a secure session. Please try again.");
+        setLoading(false);
+        return;
+      }
+
       setAuthCookie(email);
       toast.success("Successfully logged in!");
       router.push(redirectTo);

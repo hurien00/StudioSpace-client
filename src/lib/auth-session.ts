@@ -18,6 +18,41 @@ export function setAuthCookie(value = "authenticated") {
   )}; path=/; max-age=${MAX_AGE_SECONDS}; samesite=lax`;
 }
 
+/**
+ * Asks the Next.js auth route to exchange the Better Auth session for a JWT
+ * stored in an HTTPOnly cookie. The cookie is then sent automatically to the
+ * Express API (localhost:8000) on every credentialed request.
+ */
+export async function ensureAuthToken(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+
+  try {
+    const res = await fetch("/api/auth/jwt-cookie", {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Clears the HTTPOnly JWT cookie when the user signs out. */
+export async function clearAuthToken() {
+  if (typeof window === "undefined") return;
+
+  try {
+    await fetch("/api/auth/jwt-cookie", {
+      method: "DELETE",
+      credentials: "include",
+    });
+  } catch {
+    // The local session is cleared regardless of this request.
+  }
+}
+
 export function clearAuthCookie() {
   if (typeof document === "undefined") return;
   document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0; samesite=lax`;

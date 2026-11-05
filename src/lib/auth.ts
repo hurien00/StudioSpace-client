@@ -19,7 +19,9 @@ export const auth = betterAuth({
     // Keep in sync with the registration form's validation (6 characters).
     minPasswordLength: 6,
   },
-  plugins: [jwt()],
+  // The JWT is cached in an HTTPOnly cookie for the same lifetime as the
+  // session, so keep its `exp` claim in sync (defaults to 15 minutes).
+  plugins: [jwt({ jwt: { expirationTime: "7d" } })],
   session: {
     cookieCache: {
       enabled: true,

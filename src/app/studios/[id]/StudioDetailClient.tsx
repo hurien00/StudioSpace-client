@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { authClient } from "@/lib/auth-client";
 
 interface Studio {
   _id: string;
@@ -41,6 +42,8 @@ interface Studio {
 
 export default function StudioDetailClient({ studioId }: { studioId: string }) {
   const router = useRouter();
+  const { data: session } = authClient.useSession();
+  
   const [studio, setStudio] = useState<Studio | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -48,10 +51,12 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const [bookingDate, setBookingDate] = useState("");
+  const [bookingStartTime, setBookingStartTime] = useState("10:00");
   const [bookingHours, setBookingHours] = useState(2);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const userEmail = "hurienj51@gmail.com";
+  const userEmail = session?.user?.email || "";
+  const userName = session?.user?.name || "User";
 
   useEffect(() => {
     let isMounted = true;
@@ -118,8 +123,13 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
   const descriptionText = studio.description || studio.overview || "No description provided for this studio listing.";
   const totalPrice = rate * bookingHours;
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!userEmail) {
+      router.push(`/login?callbackUrl=${encodeURIComponent(`/studios/${studioId}`)}`);
+      return;
+    }
+
     setIsSubmitting(true);
 
     const bookingPayload = {
@@ -128,31 +138,48 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
       studioImage: mainImage,
       location: studio.location,
       date: bookingDate,
-      timeSlot: `${bookingHours} Hours`,
-      totalPrice: totalPrice,
+      startTime: bookingStartTime,
+      hours: Number(bookingHours),
+      timeSlot: `${bookingStartTime} (${bookingHours} Hours)`,
+      totalPrice: Number(totalPrice),
       userEmail: userEmail,
+      userName: userName,
     };
 
-    fetch("http://localhost:8000/api/bookings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(bookingPayload),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to create booking");
-        return res.json();
-      })
-      .then(() => {
-        setIsSubmitting(false);
-        setIsBookingOpen(false);
-        router.push("/my-bookings");
-      })
-      .catch((err) => {
-        console.error("Booking error:", err);
-        setIsSubmitting(false);
+    try {
+      const res = await fetch("http://localhost:8000/api/bookings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(bookingPayload),
+        credentials: "include",
       });
+
+      const data = await res.json();
+
+      if (res.status === 401) {
+        router.push(`/login?callbackUrl=${encodeURIComponent(`/studios/${studioId}`)}`);
+        return;
+      }
+
+      if (res.status === 409) {
+        alert(data.message || "Time slot collision! This studio is already booked for this time.");
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to create booking");
+      }
+
+      setIsBookingOpen(false);
+      router.push("/my-bookings");
+    } catch (err) {
+      console.error("Booking submit error:", err);
+      alert(err instanceof Error ? err.message : "Failed to create booking");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -274,15 +301,15 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
                 <div className="flex items-center gap-4">
                   <Avatar className="h-12 w-12 border border-border">
                     <AvatarFallback className="font-bold bg-indigo-500/10 text-indigo-600">
-                      {studio.userName ? studio.userName.slice(0, 2).toUpperCase() : "HJ"}
+                      {studio.userName ? studio.userName.slice(0, 2).toUpperCase() : "SS"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <h3 className="text-base font-bold text-foreground">Hosted by {studio.userName || "Hurien Jannat"}</h3>
+                      <h3 className="text-base font-bold text-foreground">Hosted by {studio.userName || "Studio Owner"}</h3>
                       <UserCheck className="w-4 h-4 text-blue-500" />
                     </div>
-                    <p className="text-xs text-muted-foreground">{studio.userEmail || "hurienj51@gmail.com"}</p>
+                    <p className="text-xs text-muted-foreground">{studio.userEmail || "host@studiospace.com"}</p>
                   </div>
                 </div>
                 <Button variant="outline" size="sm" className="rounded-full text-xs">Contact Host</Button>
@@ -303,7 +330,7 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
               </div>
               <Button
                 onClick={() => setIsBookingOpen(true)}
-                className="w-full rounded-full py-6 font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white hover:opacity-95 shadow-md text-sm"
+                className="w-full rounded-full py-6 font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white hover:opacity-95 shadow-md text-sm cursor-pointer"
               >
                 Book Workspace Now
               </Button>
@@ -315,23 +342,46 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
       {isBookingOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
           <div className="bg-card border border-border w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl relative">
-            <button onClick={() => setIsBookingOpen(false)} className="absolute top-5 right-5 p-2 rounded-full hover:bg-muted text-muted-foreground transition">
+            <button onClick={() => setIsBookingOpen(false)} className="absolute top-5 right-5 p-2 rounded-full hover:bg-muted text-muted-foreground transition cursor-pointer">
               <X className="w-5 h-5" />
             </button>
 
             <form onSubmit={handleBookingSubmit} className="space-y-5">
               <div>
                 <h3 className="text-xl font-bold text-foreground">Reserve {studio.title}</h3>
-                <p className="text-xs text-muted-foreground mt-1">Select date and hours for booking.</p>
+                <p className="text-xs text-muted-foreground mt-1">Select date, start time and duration for booking.</p>
               </div>
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-foreground mb-1.5">Select Date</label>
-                  <input type="date" required value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} className="w-full px-4 py-3 rounded-2xl bg-background border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary" />
+                  <input 
+                    type="date" 
+                    required 
+                    value={bookingDate} 
+                    onChange={(e) => setBookingDate(e.target.value)} 
+                    className="w-full px-4 py-3 rounded-2xl bg-background border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1.5">Start Time</label>
+                  <input 
+                    type="time" 
+                    required 
+                    value={bookingStartTime} 
+                    onChange={(e) => setBookingStartTime(e.target.value)} 
+                    className="w-full px-4 py-3 rounded-2xl bg-background border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary" 
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-foreground mb-1.5">Duration (Hours)</label>
-                  <input type="number" min="1" max="12" value={bookingHours} onChange={(e) => setBookingHours(Number(e.target.value))} className="w-full px-4 py-3 rounded-2xl bg-background border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary" />
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max="12" 
+                    value={bookingHours} 
+                    onChange={(e) => setBookingHours(Number(e.target.value))} 
+                    className="w-full px-4 py-3 rounded-2xl bg-background border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary" 
+                  />
                 </div>
                 <div className="p-4 rounded-2xl bg-muted/50 border border-border space-y-2 text-xs">
                   <div className="flex justify-between text-muted-foreground">
@@ -344,7 +394,7 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
                   </div>
                 </div>
               </div>
-              <Button type="submit" disabled={isSubmitting} className="w-full rounded-full py-6 font-bold bg-pink-500 hover:bg-pink-600 text-white">
+              <Button type="submit" disabled={isSubmitting} className="w-full rounded-full py-6 font-bold bg-pink-500 hover:bg-pink-600 text-white cursor-pointer">
                 {isSubmitting ? "Confirming & Saving..." : "Confirm & Pay"}
               </Button>
             </form>

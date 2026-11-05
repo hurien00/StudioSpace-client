@@ -6,7 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { User, Mail, Image as ImageIcon, Lock, ArrowRight } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { saveUser } from "@/lib/auth-session";
+import { clearSession, ensureAuthToken, saveUser } from "@/lib/auth-session";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -59,6 +59,15 @@ export default function SignUpPage() {
         email: authUser?.email ?? email,
         image: authUser?.image ?? photoURL,
       });
+
+      // Better Auth signs the user in after registration; issue the JWT
+      // HTTPOnly cookie immediately so protected mutations work right away.
+      const tokenReady = await ensureAuthToken();
+      if (!tokenReady) {
+        clearSession();
+        toast.error("Could not start a secure session. Please try again.");
+        return;
+      }
 
       toast.success("Account created successfully!");
       router.push("/");

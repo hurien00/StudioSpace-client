@@ -24,15 +24,15 @@ export default function AddStudioPage() {
     const formData = new FormData(e.currentTarget);
     
     const studioData = {
-      title: formData.get("title"),
-      category: formData.get("category"),
-      hourlyRate: formData.get("hourlyRate"),
-      securityDeposit: formData.get("securityDeposit"),
-      maxCapacity: formData.get("maxCapacity"),
-      location: formData.get("location"),
+      title: formData.get("title")?.toString().trim(),
+      category: formData.get("category")?.toString(),
+      hourlyRate: Number(formData.get("hourlyRate")),
+      securityDeposit: Number(formData.get("securityDeposit") || 0),
+      maxCapacity: Number(formData.get("maxCapacity") || 1),
+      location: formData.get("location")?.toString().trim(),
       image: imageUrl,
       amenities: formData.get("amenities")?.toString().split(",").map(item => item.trim()).filter(Boolean) || [],
-      overview: formData.get("overview"),
+      overview: formData.get("overview")?.toString().trim(),
       userName: user?.name || "Anonymous",
       userEmail: user?.email || "unknown@example.com",
     };
@@ -43,7 +43,7 @@ export default function AddStudioPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(studioData),
-        credentials: "include",
+        credentials: "include", // 👈 HTTPOnly কুকি পাঠানোর জন্য জরুরি
       });
 
       if (res.status === 401) {
