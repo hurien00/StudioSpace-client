@@ -3,14 +3,16 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Save } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { authFetch } from "@/lib/auth-session";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function EditStudioClient({ studioId }: { studioId: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -27,7 +29,7 @@ export default function EditStudioClient({ studioId }: { studioId: string }) {
   useEffect(() => {
     if (!studioId) return;
 
-    fetch(`http://localhost:8000/api/studios/${studioId}`)
+    fetch(`${API_BASE_URL}/api/studios/${studioId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch studio data");
         return res.json();
@@ -62,13 +64,12 @@ export default function EditStudioClient({ studioId }: { studioId: string }) {
     e.preventDefault();
     setIsSubmitting(true);
 
-    fetch(`http://localhost:8000/api/studios/${studioId}`, {
+    authFetch(`${API_BASE_URL}/api/studios/${studioId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(formData),
-      credentials: "include",
     })
       .then((res) => {
         if (res.status === 401) {
@@ -81,13 +82,14 @@ export default function EditStudioClient({ studioId }: { studioId: string }) {
         return res.json();
       })
       .then(() => {
-        setToastMessage("Studio updated successfully!");
+        toast.success("Studio updated successfully!");
         setTimeout(() => {
           router.push("/my-listings");
         }, 1500);
       })
       .catch((err) => {
         console.error("Update error:", err);
+        toast.error("Failed to update studio. Please try again.");
         setIsSubmitting(false);
       });
   };
@@ -104,13 +106,6 @@ export default function EditStudioClient({ studioId }: { studioId: string }) {
 
   return (
     <div className="w-full min-h-screen bg-background pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto pt-10 relative">
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-emerald-500 text-white shadow-xl animate-in fade-in">
-          <CheckCircle2 className="w-5 h-5 shrink-0" />
-          <span className="text-xs font-bold">{toastMessage}</span>
-        </div>
-      )}
-
       <div className="mb-6">
         <Link
           href="/my-listings"
@@ -162,7 +157,7 @@ export default function EditStudioClient({ studioId }: { studioId: string }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label className="block text-xs font-bold text-foreground mb-2">
-              Hourly Rate (৳)
+              Hourly Rate ($)
             </label>
             <input
               type="number"

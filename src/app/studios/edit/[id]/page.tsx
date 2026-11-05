@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import EditStudioClient from "./EditStudioClient";
+import PrivateRoute from "@/components/PrivateRoute";
 
 interface EditStudioPageProps {
   params: Promise<{ id: string }>;
@@ -23,5 +24,9 @@ export default function EditStudioPage({ params }: EditStudioPageProps) {
 
 async function EditStudioContent({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-  return <EditStudioClient studioId={resolvedParams.id} />;
+  return (
+    <PrivateRoute>
+      <EditStudioClient studioId={resolvedParams.id} />
+    </PrivateRoute>
+  );
 }

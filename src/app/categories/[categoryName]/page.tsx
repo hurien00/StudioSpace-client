@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Star, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { API_BASE_URL } from "@/lib/api";
 
 interface Studio {
   _id: string;
@@ -36,7 +37,7 @@ export default function CategoryStudiosPage({ params }: PageProps) {
   useEffect(() => {
     if (!categoryName) return;
 
-    fetch("http://localhost:8000/api/studios", {
+    fetch(`${API_BASE_URL}/api/studios`, {
       cache: "no-store",
     })
       .then((res) => {
@@ -69,7 +70,7 @@ export default function CategoryStudiosPage({ params }: PageProps) {
   }
 
   return (
-    <div className="w-full min-h-screen bg-background pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pt-10 space-y-8">
+    <div className="w-full min-h-screen bg-background pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pt-8 space-y-8">
       <Link
         href="/"
         className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground transition"
@@ -136,7 +137,7 @@ export default function CategoryStudiosPage({ params }: PageProps) {
 
               <div className="p-5 pt-2 border-t border-border mt-3 flex items-center justify-between">
                 <span className="text-sm font-black text-primary">
-                  ৳{studio.hourlyRate ?? studio.price ?? 2000} <span className="text-xs text-muted-foreground font-normal">/ hr</span>
+                  ${studio.hourlyRate ?? studio.price ?? 2000} <span className="text-xs text-muted-foreground font-normal">/ hr</span>
                 </span>
                 <span className="text-xs font-bold text-foreground underline">View Details</span>
               </div>

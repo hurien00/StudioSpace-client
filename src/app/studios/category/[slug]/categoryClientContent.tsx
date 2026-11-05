@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Star, Heart, MapPin, ArrowLeft } from "lucide-react";
 import { fromSlug } from "@/lib/utils";
+import { API_BASE_URL } from "@/lib/api";
 
 interface Studio {
   _id: string;
@@ -26,7 +27,7 @@ export default function CategoryClientContent({ slug }: { slug: string }) {
   useEffect(() => {
     let isMounted = true;
 
-    fetch("http://localhost:8000/api/studios", {
+    fetch(`${API_BASE_URL}/api/studios`, {
       cache: "no-store",
     })
       .then((res) => res.json())
@@ -141,7 +142,7 @@ export default function CategoryClientContent({ slug }: { slug: string }) {
                   <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
                     <div>
                       <span className="text-lg font-extrabold text-foreground">
-                        ৳{displayPrice}
+                        ${displayPrice}
                       </span>
                       <span className="text-xs text-muted-foreground font-medium">
                         {" "}

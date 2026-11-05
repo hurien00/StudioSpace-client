@@ -10,12 +10,14 @@ import {
   MapPin, 
   AlertTriangle, 
   X, 
-  CheckCircle2, 
   PlusCircle,
   Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthUser, useIsClient } from "@/hooks/use-auth-user";
+import { authFetch } from "@/lib/auth-session";
+import { API_BASE_URL } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Studio {
   _id: string;
@@ -41,7 +43,6 @@ export default function MyListingsClient() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [studioToDelete, setStudioToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (isClient && !userEmail) {
@@ -57,9 +58,8 @@ export default function MyListingsClient() {
     const loadListings = async () => {
       setLoading(true);
       try {
-        const res = await fetch(
-          `http://localhost:8000/api/studios/my-listings?email=${encodeURIComponent(userEmail)}`,
-          { credentials: "include" }
+        const res = await authFetch(
+          `${API_BASE_URL}/api/studios/my-listings?email=${encodeURIComponent(userEmail)}`
         );
 
         if (res.status === 401) {
@@ -96,9 +96,8 @@ export default function MyListingsClient() {
     if (!studioToDelete) return;
     setIsDeleting(true);
 
-    fetch(`http://localhost:8000/api/studios/${studioToDelete}`, {
+    authFetch(`${API_BASE_URL}/api/studios/${studioToDelete}`, {
       method: "DELETE",
-      credentials: "include",
     })
       .then((res) => {
         if (res.status === 401) {
@@ -113,13 +112,12 @@ export default function MyListingsClient() {
         setDeleteModalOpen(false);
         setStudioToDelete(null);
         setIsDeleting(false);
-        
-        // Success Toast Show
-        setToastMessage("Studio deleted successfully!");
-        setTimeout(() => setToastMessage(null), 3000);
+
+        toast.success("Studio deleted successfully!");
       })
       .catch((err) => {
         console.error("Delete error:", err);
+        toast.error("Failed to delete studio. Please try again.");
         setIsDeleting(false);
       });
   };
@@ -136,15 +134,6 @@ export default function MyListingsClient() {
 
   return (
     <div className="w-full min-h-screen bg-background pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pt-10 relative">
-      
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-emerald-500 text-white shadow-xl animate-in fade-in slide-in-from-bottom-5">
-          <CheckCircle2 className="w-5 h-5 shrink-0" />
-          <span className="text-xs font-bold">{toastMessage}</span>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-border">
         <div>
@@ -200,7 +189,7 @@ export default function MyListingsClient() {
                     <MapPin className="w-3.5 h-3.5 text-pink-500 shrink-0" /> {studio.location}
                   </p>
                   <p className="text-sm font-black text-primary pt-1">
-                    ৳{studio.hourlyRate ?? studio.price ?? 2000} <span className="text-xs font-medium text-muted-foreground">/ hr</span>
+                    ${studio.hourlyRate ?? studio.price ?? 2000} <span className="text-xs font-medium text-muted-foreground">/ hr</span>
                   </p>
                 </div>
               </div>

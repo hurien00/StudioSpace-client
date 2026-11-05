@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Star, Heart } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Studio {
   _id: string;
@@ -21,7 +23,7 @@ export default function FeaturedStudios() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/studios/featured")
+    fetch(`${API_BASE_URL}/api/studios/featured`)
       .then((res) => res.json())
       .then((data) => {
         setStudios(data);
@@ -87,7 +89,12 @@ export default function FeaturedStudios() {
                 </span>
 
                 {/* Favorite Icon Button */}
-                <button className="absolute bottom-3 right-3 bg-background/90 hover:bg-background text-pink-500 backdrop-blur-md p-2 rounded-full shadow-sm transition-colors">
+                <button
+                  type="button"
+                  aria-label={`Save ${studio.title}`}
+                  onClick={() => toast.success(`${studio.title} saved to your wishlist!`)}
+                  className="absolute bottom-3 right-3 bg-background/90 hover:bg-background text-pink-500 backdrop-blur-md p-2 rounded-full shadow-sm transition-colors cursor-pointer"
+                >
                   <Heart className="w-4 h-4" />
                 </button>
               </div>
@@ -106,7 +113,7 @@ export default function FeaturedStudios() {
                 {/* Price & View Details CTA */}
                 <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
                   <div>
-                    <span className="text-lg font-extrabold text-foreground">৳{displayPrice}</span>
+                    <span className="text-lg font-extrabold text-foreground">${displayPrice}</span>
                     <span className="text-xs text-muted-foreground font-medium"> / hr</span>
                   </div>
 

@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthUser, useIsClient } from "@/hooks/use-auth-user";
+import { authFetch } from "@/lib/auth-session";
+import { API_BASE_URL } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Booking {
   _id: string;
@@ -33,7 +36,6 @@ export default function MyBookingsClient() {
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const isClient = useIsClient();
   const user = useAuthUser();
@@ -52,9 +54,8 @@ export default function MyBookingsClient() {
     const fetchBookings = async () => {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:8000/api/bookings", {
+        const res = await authFetch(`${API_BASE_URL}/api/bookings`, {
           method: "GET",
-          credentials: "include", 
         });
 
         if (res.status === 401) {
@@ -79,12 +80,11 @@ export default function MyBookingsClient() {
   const handleCancelBooking = (id: string) => {
     setCancellingId(id);
 
-    fetch(`http://localhost:8000/api/bookings/${id}/cancel`, {
+    authFetch(`${API_BASE_URL}/api/bookings/${id}/cancel`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
-      credentials: "include",
     })
       .then((res) => {
         if (res.status === 401) {
@@ -100,11 +100,11 @@ export default function MyBookingsClient() {
             item._id === id ? { ...item, status: "Cancelled" } : item
           )
         );
-        setToastMessage("Booking cancelled successfully!");
-        setTimeout(() => setToastMessage(null), 3000);
+        toast.success("Booking cancelled successfully!");
       })
       .catch((err) => {
         console.error("Cancellation error:", err);
+        toast.error("Failed to cancel booking. Please try again.");
       })
       .finally(() => {
         setCancellingId(null);
@@ -154,13 +154,6 @@ export default function MyBookingsClient() {
 
   return (
     <div className="w-full min-h-screen bg-background pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pt-10 relative">
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-emerald-500 text-white shadow-xl animate-in fade-in">
-          <CheckCircle2 className="w-5 h-5 shrink-0" />
-          <span className="text-xs font-bold">{toastMessage}</span>
-        </div>
-      )}
-
       <div className="mb-8 pb-6 border-b border-border">
         <h1 className="text-3xl font-black text-foreground tracking-tight">My Bookings</h1>
         <p className="text-xs text-muted-foreground mt-1">
@@ -220,7 +213,7 @@ export default function MyBookingsClient() {
                   </div>
 
                   <p className="text-sm font-black text-primary pt-1">
-                    Total: ৳{booking.totalPrice}
+                    Total: ${booking.totalPrice}
                   </p>
                 </div>
               </div>

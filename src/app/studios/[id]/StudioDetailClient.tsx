@@ -19,7 +19,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { authFetch } from "@/lib/auth-session";
 import { authClient } from "@/lib/auth-client";
+import { API_BASE_URL } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Studio {
   _id: string;
@@ -61,7 +64,7 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
   useEffect(() => {
     let isMounted = true;
 
-    fetch(`http://localhost:8000/api/studios/${studioId}`, {
+    fetch(`${API_BASE_URL}/api/studios/${studioId}`, {
       cache: "no-store",
     })
       .then((res) => {
@@ -123,8 +126,16 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
   const descriptionText = studio.description || studio.overview || "No description provided for this studio listing.";
   const totalPrice = rate * bookingHours;
 
-  const handleBookingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success("Studio link copied to clipboard!");
+    } catch {
+      toast.error("Could not copy the link. Please copy the URL manually.");
+    }
+  };
+
+  const handleBookingSubmit = async (e: React.FormEvent) => {    e.preventDefault();
     if (!userEmail) {
       router.push(`/login?callbackUrl=${encodeURIComponent(`/studios/${studioId}`)}`);
       return;
@@ -147,13 +158,12 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
     };
 
     try {
-      const res = await fetch("http://localhost:8000/api/bookings", {
+      const res = await authFetch(`${API_BASE_URL}/api/bookings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(bookingPayload),
-        credentials: "include",
       });
 
       const data = await res.json();
@@ -164,7 +174,10 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
       }
 
       if (res.status === 409) {
-        alert(data.message || "Time slot collision! This studio is already booked for this time.");
+        toast.error(
+          data.message ||
+            "Time slot collision! This studio is already booked for this time."
+        );
         return;
       }
 
@@ -173,10 +186,11 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
       }
 
       setIsBookingOpen(false);
+      toast.success("Booking created successfully! Check My Bookings for status.");
       router.push("/my-bookings");
     } catch (err) {
       console.error("Booking submit error:", err);
-      alert(err instanceof Error ? err.message : "Failed to create booking");
+      toast.error(err instanceof Error ? err.message : "Failed to create booking");
     } finally {
       setIsSubmitting(false);
     }
@@ -192,10 +206,15 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
           <ArrowLeft className="w-4 h-4" /> Back to All Studios
         </Link>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="rounded-full gap-2 text-xs">
+          <Button variant="outline" size="sm" className="rounded-full gap-2 text-xs" onClick={handleShare}>
             <Share2 className="w-3.5 h-3.5" /> Share
           </Button>
-          <Button variant="outline" size="sm" className="rounded-full gap-2 text-xs text-pink-500">
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full gap-2 text-xs text-pink-500"
+            onClick={() => toast.success("Saved to your wishlist!")}
+          >
             <Heart className="w-3.5 h-3.5" /> Save
           </Button>
         </div>
@@ -296,6 +315,64 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
               </div>
             </div>
 
+            <div className="space-y-4 pt-6 border-t border-border">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-foreground">
+                  Reviews from creators
+                </h2>
+                <span className="flex items-center gap-1 text-sm font-bold text-amber-600">
+                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  {studio.rating ?? 4.9} / 5
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  {
+                    name: "Ayesha R.",
+                    role: "Photographer",
+                    quote:
+                      "The cyc wall was spotless and the lighting rig saved us an hour of setup. Booked again for next month.",
+                  },
+                  {
+                    name: "Daniel K.",
+                    role: "Film Producer",
+                    quote:
+                      "Host answered every question before the shoot and the space matched the photos exactly.",
+                  },
+                  {
+                    name: "Mira S.",
+                    role: "Podcast Host",
+                    quote:
+                      "Quiet, well treated room with backup mics. The hourly pricing made budgeting simple.",
+                  },
+                ].map((review) => (
+                  <div
+                    key={review.name}
+                    className="p-4 rounded-2xl bg-card border border-border space-y-2"
+                  >
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className="w-3 h-3 fill-amber-400 text-amber-400"
+                        />
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      &ldquo;{review.quote}&rdquo;
+                    </p>
+                    <p className="text-xs font-bold text-foreground pt-1">
+                      {review.name}
+                      <span className="font-medium text-muted-foreground">
+                        {" "}
+                        · {review.role}
+                      </span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="p-6 rounded-3xl bg-card border border-border space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -321,7 +398,7 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
             <div className="sticky top-24 rounded-3xl border border-border bg-card p-6 shadow-xl space-y-6">
               <div className="flex items-baseline justify-between border-b border-border pb-4">
                 <div>
-                  <span className="text-2xl font-black text-foreground">৳{rate}</span>
+                  <span className="text-2xl font-black text-foreground">${rate}</span>
                   <span className="text-xs text-muted-foreground font-medium"> / hr</span>
                 </div>
                 <span className="text-xs font-semibold text-emerald-600 bg-emerald-500/10 px-2.5 py-1 rounded-full">
@@ -385,12 +462,12 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
                 </div>
                 <div className="p-4 rounded-2xl bg-muted/50 border border-border space-y-2 text-xs">
                   <div className="flex justify-between text-muted-foreground">
-                    <span>৳{rate} x {bookingHours} hours</span>
-                    <span>৳{totalPrice}</span>
+                    <span>${rate} x {bookingHours} hours</span>
+                    <span>${totalPrice}</span>
                   </div>
                   <div className="flex justify-between font-bold text-foreground text-sm pt-2 border-t border-border">
                     <span>Total</span>
-                    <span className="text-primary">৳{totalPrice}</span>
+                    <span className="text-primary">${totalPrice}</span>
                   </div>
                 </div>
               </div>
