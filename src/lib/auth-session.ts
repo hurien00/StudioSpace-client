@@ -8,6 +8,13 @@ export interface AuthUser {
 export const AUTH_COOKIE_NAME = "authToken";
 export const AUTH_CHANGE_EVENT = "auth-change";
 
+
+let memoryToken: string | null = null;
+
+export function getAuthToken(): string | null {
+  return memoryToken;
+}
+
 // Keep the cookie alive for 7 days
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
@@ -18,11 +25,6 @@ export function setAuthCookie(value = "authenticated") {
   )}; path=/; max-age=${MAX_AGE_SECONDS}; samesite=lax`;
 }
 
-/**
- * Asks the Next.js auth route to exchange the Better Auth session for a JWT
- * stored in an HTTPOnly cookie. The cookie is then sent automatically to the
- * Express API (localhost:8000) on every credentialed request.
- */
 export async function ensureAuthToken(): Promise<boolean> {
   if (typeof window === "undefined") return false;
 
@@ -33,14 +35,59 @@ export async function ensureAuthToken(): Promise<boolean> {
       cache: "no-store",
     });
 
-    return res.ok;
+    if (!res.ok) {
+      memoryToken = null;
+      return false;
+    }
+
+    const data = (await res.json().catch(() => null)) as {
+      token?: string;
+    } | null;
+
+    memoryToken = typeof data?.token === "string" ? data.token : null;
+
+    return Boolean(memoryToken);
   } catch {
+    memoryToken = null;
     return false;
   }
 }
 
-/** Clears the HTTPOnly JWT cookie when the user signs out. */
+
+export async function authFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {}
+): Promise<Response> {
+  if (!memoryToken) {
+    await ensureAuthToken();
+  }
+
+  const buildInit = (): RequestInit => {
+    const headers = new Headers(init.headers);
+
+    if (memoryToken) {
+      headers.set("Authorization", `Bearer ${memoryToken}`);
+    }
+
+    return { ...init, headers, credentials: "include" };
+  };
+
+  let res = await fetch(input, buildInit());
+
+  if (res.status === 401) {
+    memoryToken = null;
+
+    if (await ensureAuthToken()) {
+      res = await fetch(input, buildInit());
+    }
+  }
+
+  return res;
+}
+
 export async function clearAuthToken() {
+  memoryToken = null;
+
   if (typeof window === "undefined") return;
 
   try {
@@ -52,7 +99,6 @@ export async function clearAuthToken() {
     // The local session is cleared regardless of this request.
   }
 }
-
 export function clearAuthCookie() {
   if (typeof document === "undefined") return;
   document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0; samesite=lax`;
@@ -69,21 +115,18 @@ export function getStoredUser(): AuthUser | null {
     return null;
   }
 }
-
 export function saveUser(user: AuthUser) {
   if (typeof window === "undefined") return;
   localStorage.setItem("user", JSON.stringify(user));
   setAuthCookie(user.email || "authenticated");
   notifyAuthChange();
 }
-
 export function clearSession() {
   if (typeof window === "undefined") return;
   localStorage.removeItem("user");
   clearAuthCookie();
   notifyAuthChange();
 }
-
 export function notifyAuthChange() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));

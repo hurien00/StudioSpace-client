@@ -6,7 +6,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { User, Mail, Image as ImageIcon, Lock, ArrowRight } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { clearSession, ensureAuthToken, saveUser } from "@/lib/auth-session";
+import GoogleAuthButton from "@/components/auth/google-auth-button";
+import { clearSession, saveUser } from "@/lib/auth-session";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -60,17 +61,13 @@ export default function SignUpPage() {
         image: authUser?.image ?? photoURL,
       });
 
-      // Better Auth signs the user in after registration; issue the JWT
-      // HTTPOnly cookie immediately so protected mutations work right away.
-      const tokenReady = await ensureAuthToken();
-      if (!tokenReady) {
-        clearSession();
-        toast.error("Could not start a secure session. Please try again.");
-        return;
-      }
-
-      toast.success("Account created successfully!");
-      router.push("/");
+      // Rubric flow: after a successful registration send the user to Login
+      // rather than straight into the dashboard. Clear the session Better Auth
+      // created so the login page does not immediately redirect away.
+      toast.success("Account created successfully! Please sign in.");
+      clearSession();
+      void authClient.signOut().catch(() => undefined);
+      router.push("/login");
       router.refresh();
     } catch (err) {
       console.error("SignUp Catch Error:", err);
@@ -183,6 +180,17 @@ export default function SignUpPage() {
             {loading ? "Creating Account..." : "Create Account"} <ArrowRight className="w-4 h-4" />
           </button>
         </form>
+
+        <div className="relative my-6 text-center">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border"></div>
+          </div>
+          <span className="relative bg-card px-3 text-xs text-muted-foreground font-semibold">
+            Or sign up with
+          </span>
+        </div>
+
+        <GoogleAuthButton />
 
         <p className="text-center text-xs text-muted-foreground mt-6">
           Already have an account?{" "}

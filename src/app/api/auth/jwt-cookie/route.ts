@@ -37,7 +37,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const response = NextResponse.json({ ok: true });
+    // The token is also returned so the client can send it as a Bearer token.
+    // It is cached in memory only (never localStorage) and the HTTPOnly cookie
+    // remains as a fallback / defense-in-depth mechanism.
+    const response = NextResponse.json({ ok: true, token });
     response.cookies.set(JWT_COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

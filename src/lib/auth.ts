@@ -16,11 +16,15 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    // Keep in sync with the registration form's validation (6 characters).
     minPasswordLength: 6,
   },
-  // The JWT is cached in an HTTPOnly cookie for the same lifetime as the
-  // session, so keep its `exp` claim in sync (defaults to 15 minutes).
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    },
+  },
+  
   plugins: [jwt({ jwt: { expirationTime: "7d" } })],
   session: {
     cookieCache: {
