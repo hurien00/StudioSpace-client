@@ -1,113 +1,38 @@
-"use client";
-
 import Link from "next/link";
-import Image from "next/image";
-import { Camera, Film, Mic, Music, Palette } from "lucide-react";
-import { toSlug } from "@/lib/utils";
+import { Camera, Film, Mic, Music, Wrench } from "lucide-react";
 
-interface CategoryItem {
-  title: string;
-  subtitle: string;
-  categoryQuery: string;
-  image: string;
-  icon: React.ReactNode;
-  gradient: string;
-}
-
-const categories: CategoryItem[] = [
-  {
-    title: "Photo Studios",
-    subtitle: "Cyc walls, strobes",
-    categoryQuery: "Photo Studio",
-    image: "https://images.unsplash.com/photo-1513694203232-719a280e022f",
-    icon: <Camera className="w-5 h-5 text-white" />,
-    gradient: "from-blue-600/80 via-blue-900/40 to-transparent",
-  },
-  {
-    title: "Sound Stages",
-    subtitle: "Film and video sets",
-    categoryQuery: "Film Stage",
-    image: "https://images.unsplash.com/photo-1485846234645-a62644f84728",
-    icon: <Film className="w-5 h-5 text-white" />,
-    gradient: "from-pink-600/80 via-pink-900/40 to-transparent",
-  },
-  {
-    title: "Podcast Rooms",
-    subtitle: "Treated and ready",
-    categoryQuery: "Podcast Lounge",
-    image: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc",
-    icon: <Mic className="w-5 h-5 text-white" />,
-    gradient: "from-amber-600/80 via-amber-900/40 to-transparent",
-  },
-  {
-    title: "Music Suites",
-    subtitle: "Record and mix",
-    categoryQuery: "Music Suite",
-    image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04",
-    icon: <Music className="w-5 h-5 text-white" />,
-    gradient: "from-purple-600/80 via-purple-900/40 to-transparent",
-  },
-  {
-    title: "Art Workshops",
-    subtitle: "Paint, print, build",
-    categoryQuery: "Workshop",
-    image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f",
-    icon: <Palette className="w-5 h-5 text-white" />,
-    gradient: "from-emerald-600/80 via-emerald-900/40 to-transparent",
-  },
+const CATEGORIES = [
+  { name: "Photo Studio", icon: Camera, color: "bg-pink-500/10 text-pink-500 border-pink-500/20" },
+  { name: "Film Stage", icon: Film, color: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20" },
+  { name: "Podcast Lounge", icon: Mic, color: "bg-purple-500/10 text-purple-500 border-purple-500/20" },
+  { name: "Music Suite", icon: Music, color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+  { name: "Workshop", icon: Wrench, color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" },
 ];
 
 export default function StudioCategories() {
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      {/* Section Header */}
-      <div className="mb-8">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-          Browse by studio type
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Pick a category and we will open Explore Studios with the filter already applied.
-        </p>
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="mb-8 text-center sm:text-left">
+        <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">Browse by Category</h2>
+        <p className="text-xs text-muted-foreground mt-1">Select a creative space category to explore tailored listings.</p>
       </div>
 
-      {/* Categories Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
-        {categories.map((item) => (
-          <Link
-            key={item.title}
-           
-            href={`/studios/category/${toSlug(item.categoryQuery)}`}
-            className="group relative h-80 rounded-3xl overflow-hidden border border-border bg-card shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-end p-5"
-          >
-            {/* Background Image */}
-            <div className="absolute inset-0 w-full h-full overflow-hidden">
-              <Image
-                src={item.image}
-                alt={item.title}
-                fill
-                unoptimized
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-              />
-              {/* Gradient Overlay */}
-              <div className={`absolute inset-0 bg-gradient-to-t ${item.gradient} opacity-90 group-hover:opacity-95 transition-opacity duration-300`} />
-              <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors duration-300" />
-            </div>
-
-            {/* Content & Icon */}
-            <div className="relative z-10 flex flex-col items-start text-left">
-              <div className="mb-3 p-2.5 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 shadow-inner">
-                {item.icon}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {CATEGORIES.map((cat) => {
+          const Icon = cat.icon;
+          return (
+            <Link
+              key={cat.name}
+              href={`/categories/${encodeURIComponent(cat.name)}`}
+              className="p-6 rounded-3xl bg-card border border-border hover:border-primary/50 shadow-xs hover:shadow-md transition flex flex-col items-center text-center group cursor-pointer"
+            >
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border mb-3 group-hover:scale-110 transition duration-300 ${cat.color}`}>
+                <Icon className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white tracking-tight group-hover:translate-x-1 transition-transform duration-300">
-                {item.title}
-              </h3>
-              <p className="text-xs font-medium text-white/80 mt-0.5">
-                {item.subtitle}
-              </p>
-            </div>
-          </Link>
-        ))}
+              <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition">{cat.name}</h3>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
