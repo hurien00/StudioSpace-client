@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Camera, Film, Mic, Music, Palette } from "lucide-react";
 import { toSlug } from "@/lib/utils";
 
@@ -80,10 +81,13 @@ export default function StudioCategories() {
           >
             {/* Background Image */}
             <div className="absolute inset-0 w-full h-full overflow-hidden">
-              <img
+              <Image
                 src={item.image}
                 alt={item.title}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                fill
+                unoptimized
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
               />
               {/* Gradient Overlay */}
               <div className={`absolute inset-0 bg-gradient-to-t ${item.gradient} opacity-90 group-hover:opacity-95 transition-opacity duration-300`} />

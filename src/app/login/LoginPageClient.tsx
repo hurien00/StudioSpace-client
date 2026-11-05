@@ -5,25 +5,21 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Mail, Lock, ArrowRight } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 import { getStoredUser, saveUser, setAuthCookie } from "@/lib/auth-session";
 
 export default function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Middleware sends `callbackUrl`, some private pages send `redirect` — support both.
-  const rawRedirect =
-    searchParams.get("callbackUrl") ?? searchParams.get("redirect");
+  const rawRedirect = searchParams.get("callbackUrl") ?? searchParams.get("redirect");
   const redirectTo = rawRedirect && rawRedirect.startsWith("/") ? rawRedirect : "/";
 
   const [loading, setLoading] = useState(false);
 
-  // Check: If the user is already logged in, redirect them away from the login page
   useEffect(() => {
     const storedUser = getStoredUser();
     if (storedUser) {
-      // Heal sessions created before the auth cookie existed, otherwise the
-      // middleware would keep bouncing the user back here.
       setAuthCookie(storedUser.email || "authenticated");
       router.replace(redirectTo);
     }
@@ -42,77 +38,77 @@ export default function LoginPageClient() {
 
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:8000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+
+      const { data, error } = await authClient.signIn.email({
+        email,
+        password,
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Invalid email or password");
+      if (error) {
+        toast.error(error.message || "Invalid email or password");
+        setLoading(false);
+        return;
       }
 
-      if (data.user) {
-        saveUser(data.user);
-      }
-
+      const authUser = data?.user;
+      saveUser({
+        name: authUser?.name ?? email.split("@")[0],
+        email: authUser?.email ?? email,
+        image: authUser?.image ?? undefined,
+      });
+      setAuthCookie(email);
       toast.success("Successfully logged in!");
-      
-      // Redirects user back to the exact page they requested before login
       router.push(redirectTo);
       router.refresh();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Sign In Error:", err);
-      toast.error(err.message || "Login failed. Please try again.");
-    } finally {
+      toast.error(err instanceof Error ? err.message : "Login failed. Please try again.");
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[85vh] bg-[#F8FAFC] flex flex-col items-center justify-center px-4 py-8 font-sans">
-      <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-neutral-200/80 shadow-xl">
+    <div className="min-h-[85vh] bg-background flex flex-col items-center justify-center px-4 py-8 font-sans">
+      <div className="max-w-md w-full bg-card rounded-3xl p-8 border border-border shadow-xl">
         <div className="text-center mb-6 space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
             Sign In
           </h1>
-          <p className="text-sm font-medium text-neutral-500">
+          <p className="text-sm font-medium text-muted-foreground">
             Access your StudioSpace account.
           </p>
         </div>
 
         <form onSubmit={handleSignIn} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-neutral-700 block uppercase tracking-wider">Email Address</label>
+            <label className="text-xs font-bold text-foreground block uppercase tracking-wider">Email Address</label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 name="email"
                 type="email"
                 placeholder="you@example.com"
                 required
-                className="w-full bg-neutral-50/50 border border-neutral-300 rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 transition"
+                className="w-full bg-muted/40 border border-border rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-foreground focus:outline-none focus:border-ring transition"
               />
             </div>
           </div>
 
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-neutral-700 block uppercase tracking-wider">Password</label>
+              <label className="text-xs font-bold text-foreground block uppercase tracking-wider">Password</label>
               <Link href="#" className="text-xs text-blue-600 hover:underline font-medium">
                 Forgot Password?
               </Link>
             </div>
             <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 name="password"
                 type="password"
                 placeholder="••••••••"
                 required
-                className="w-full bg-neutral-50/50 border border-neutral-300 rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 transition"
+                className="w-full bg-muted/40 border border-border rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-foreground focus:outline-none focus:border-ring transition"
               />
             </div>
           </div>
@@ -120,7 +116,7 @@ export default function LoginPageClient() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-neutral-900 text-white text-sm font-bold rounded-xl shadow-md hover:bg-neutral-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer mt-2"
+            className="w-full py-3.5 bg-primary text-primary-foreground text-sm font-bold rounded-xl shadow-md hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer mt-2"
           >
             {loading ? "Signing in..." : "Sign In"} <ArrowRight className="w-4 h-4" />
           </button>
@@ -128,9 +124,9 @@ export default function LoginPageClient() {
 
         <div className="relative my-6 text-center">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-neutral-200"></div>
+            <div className="w-full border-t border-border"></div>
           </div>
-          <span className="relative bg-white px-3 text-xs text-neutral-400 font-semibold">
+          <span className="relative bg-card px-3 text-xs text-muted-foreground font-semibold">
             Or continue with
           </span>
         </div>
@@ -138,7 +134,7 @@ export default function LoginPageClient() {
         <button
           type="button"
           onClick={() => toast.info("Google sign-in integration")}
-          className="w-full flex items-center justify-center gap-2 py-3 px-3 border border-neutral-200 hover:border-neutral-300 rounded-xl bg-white text-neutral-900 transition cursor-pointer shadow-sm text-sm font-bold"
+          className="w-full flex items-center justify-center gap-2 py-3 px-3 border border-border hover:border-ring rounded-xl bg-card text-foreground transition cursor-pointer shadow-sm text-sm font-bold"
         >
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -150,9 +146,9 @@ export default function LoginPageClient() {
         </button>
 
         <div className="text-center pt-6">
-          <p className="text-xs font-medium text-neutral-500">
-            Don't have an account?{" "}
-            <Link href="/register" className="font-bold text-neutral-900 hover:underline">
+          <p className="text-xs font-medium text-muted-foreground">
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="font-bold text-foreground hover:underline">
               Sign up
             </Link>
           </p>
@@ -160,7 +156,7 @@ export default function LoginPageClient() {
       </div>
 
       <div className="mt-6 text-center">
-        <Link href="/" className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition">
+        <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition">
           ← Return to Home
         </Link>
       </div>

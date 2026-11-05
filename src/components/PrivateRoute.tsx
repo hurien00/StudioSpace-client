@@ -1,26 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useAuthUser, useIsClient } from "@/hooks/use-auth-user";
 
 export default function PrivateRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const isClient = useIsClient();
+  const user = useAuthUser();
 
   useEffect(() => {
-    // Replace with your actual auth validation logic (e.g., AuthContext, cookie, or localStorage)
-    const user = localStorage.getItem("user"); 
-
-    if (!user) {
-      setIsAuthenticated(false);
+    if (isClient && !user) {
       router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
-    } else {
-      setIsAuthenticated(true);
     }
-  }, [router, pathname]);
+  }, [isClient, user, router, pathname]);
 
-  if (isAuthenticated === null) {
+  if (!isClient) {
     return (
       <div className="w-full min-h-[75vh] flex items-center justify-center">
         <p className="text-muted-foreground animate-pulse text-sm font-bold">
@@ -30,5 +26,5 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
     );
   }
 
-  return isAuthenticated ? <>{children}</> : null;
+  return user ? <>{children}</> : null;
 }

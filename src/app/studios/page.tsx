@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Star, Heart, Search, MapPin } from "lucide-react";
 
@@ -40,26 +41,26 @@ export default function ExploreStudiosPage() {
   );
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] py-10 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-background text-foreground py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-neutral-900 tracking-tight">
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
               Explore Studios
             </h1>
-            <p className="text-sm text-neutral-500 mt-1">
+            <p className="text-sm opacity-70 mt-1">
               Discover and book creative spaces, sound stages, and photo studios by the hour.
             </p>
           </div>
 
           <div className="relative w-full md:w-72">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50" />
             <input
               type="text"
               placeholder="Search by title, category..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-full border border-neutral-200 bg-white text-sm focus:outline-none focus:border-blue-600 shadow-sm transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-full border border-border bg-card text-sm focus:outline-none focus:border-primary shadow-sm transition-all"
             />
           </div>
         </div>
@@ -67,11 +68,11 @@ export default function ExploreStudiosPage() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((n) => (
-              <div key={n} className="bg-white rounded-2xl h-[380px] border border-neutral-200 animate-pulse p-4 flex flex-col justify-between">
-                <div className="w-full h-52 bg-neutral-200 rounded-xl" />
+              <div key={n} className="bg-card rounded-2xl h-[380px] border border-border animate-pulse p-4 flex flex-col justify-between">
+                <div className="w-full h-52 bg-muted rounded-xl" />
                 <div className="space-y-2 py-2">
-                  <div className="h-4 bg-neutral-200 rounded w-3/4" />
-                  <div className="h-3 bg-neutral-200 rounded w-1/2" />
+                  <div className="h-4 bg-muted rounded w-3/4" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
                 </div>
               </div>
             ))}
@@ -84,48 +85,51 @@ export default function ExploreStudiosPage() {
               return (
                 <div
                   key={studio._id}
-                  className="bg-white rounded-2xl overflow-hidden border border-neutral-200/80 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between"
+                  className="bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between"
                 >
-                  <div className="relative h-56 w-full bg-neutral-100 overflow-hidden group">
-                    <img
+                  <div className="relative h-56 w-full bg-background overflow-hidden group">
+                    <Image
                       src={studio.image}
                       alt={studio.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      fill
+                      unoptimized
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
 
-                    <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-neutral-900 text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
+                    <span className="absolute top-3 left-3 bg-card/90 backdrop-blur-md text-foreground text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
                       {studio.category}
                     </span>
 
-                    <span className="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-neutral-900 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+                    <span className="absolute top-3 right-3 bg-card/90 backdrop-blur-md text-foreground text-xs font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       {studio.rating ?? 4.9}
                     </span>
 
-                    <button className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md p-2 rounded-full shadow-sm hover:bg-white text-pink-500 transition-colors">
+                    <button className="absolute bottom-3 right-3 bg-card/90 backdrop-blur-md p-2 rounded-full shadow-sm hover:bg-card text-pink-500 transition-colors">
                       <Heart className="w-4 h-4" />
                     </button>
                   </div>
 
                   <div className="p-5 flex flex-col flex-grow justify-between">
                     <div>
-                      <h3 className="text-base font-bold text-neutral-900 line-clamp-1">
+                      <h3 className="text-base font-bold line-clamp-1">
                         {studio.title}
                       </h3>
-                      <p className="text-xs text-neutral-500 mt-1 flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-neutral-400" /> {studio.location}
+                      <p className="text-xs opacity-70 mt-1 flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 opacity-60" /> {studio.location}
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-neutral-100">
+                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/60">
                       <div>
-                        <span className="text-lg font-extrabold text-neutral-900">৳{displayRate}</span>
-                        <span className="text-xs text-neutral-500 font-medium"> / hr</span>
+                        <span className="text-lg font-extrabold">৳{displayRate}</span>
+                        <span className="text-xs opacity-70 font-medium"> / hr</span>
                       </div>
 
                       <Link
                         href={`/studios/${studio._id}`}
-                        className="px-4 py-2 rounded-full border border-neutral-300 hover:border-neutral-900 text-neutral-900 font-semibold text-xs transition-all hover:bg-neutral-900 hover:text-white"
+                        className="px-4 py-2 rounded-full border border-border hover:border-foreground text-foreground font-semibold text-xs transition-all hover:bg-foreground hover:text-background"
                       >
                         View Details
                       </Link>
@@ -136,12 +140,12 @@ export default function ExploreStudiosPage() {
             })}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-3xl border border-neutral-200 mt-6 shadow-sm">
-            <p className="text-xl font-bold text-neutral-800">No studios found</p>
-            <p className="text-sm text-neutral-500 mt-1">Try searching with a different keyword or check back later.</p>
+          <div className="text-center py-20 bg-card rounded-3xl border border-border mt-6 shadow-sm">
+            <p className="text-xl font-bold">No studios found</p>
+            <p className="text-sm opacity-70 mt-1">Try searching with a different keyword or check back later.</p>
             <button
               onClick={() => setSearchQuery("")}
-              className="mt-6 px-6 py-2.5 rounded-full bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-all shadow-md"
+              className="mt-6 px-6 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all shadow-md"
             >
               Reset Search
             </button>

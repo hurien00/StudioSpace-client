@@ -1,26 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { PlusCircle, Image as ImageIcon, Loader2, DollarSign, Users, MapPin, Tag, FileText } from "lucide-react";
+import { PlusCircle, Image as ImageIcon, Loader2, Users, MapPin, Tag } from "lucide-react";
+import { useAuthUser } from "@/hooks/use-auth-user";
 
 export default function AddStudioPage() {
   const router = useRouter();
+  const user = useAuthUser();
   const [loading, setLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Failed to parse user from localStorage");
-      }
-    }
-  }, []);
+  const [previewFailed, setPreviewFailed] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -51,7 +43,15 @@ export default function AddStudioPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(studioData),
+        credentials: "include",
       });
+
+      if (res.status === 401) {
+        toast.error("Session expired or unauthorized. Please log in again.");
+        const currentPath = window.location.pathname;
+        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+        return;
+      }
 
       const data = await res.json();
 
@@ -62,45 +62,44 @@ export default function AddStudioPage() {
       toast.success("Studio added successfully!");
       router.push("/my-listings");
       router.refresh();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Add studio error:", err);
-      toast.error(err.message || "Something went wrong");
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-10 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-3xl mx-auto bg-white rounded-3xl p-8 border border-neutral-200/80 shadow-xl">
-        <div className="mb-8 border-b border-neutral-100 pb-5">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 tracking-tight flex items-center gap-2">
-            <PlusCircle className="w-8 h-8 text-indigo-600" /> Add New Studio
+    <div className="min-h-screen bg-base-200 text-base-content py-10 px-4 sm:px-6 lg:px-8 font-sans transition-colors duration-300">
+      <div className="max-w-3xl mx-auto bg-base-100 rounded-3xl p-8 border border-base-300 shadow-xl">
+        <div className="mb-8 border-b border-base-300 pb-5">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2">
+            <PlusCircle className="w-8 h-8 text-indigo-500" /> Add New Studio
           </h1>
-          <p className="text-sm text-neutral-500 mt-1">
+          <p className="text-sm opacity-70 mt-1">
             Fill in the details below to list your creative space on StudioSpace.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Title & Category */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Studio Title</label>
+              <label className="text-xs font-bold uppercase tracking-wider opacity-80">Studio Title</label>
               <input
                 name="title"
                 type="text"
                 placeholder="e.g. Neon Horizon Film Stage"
                 required
-                className="w-full bg-neutral-50 border border-neutral-300 rounded-xl px-4 py-3 text-sm font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 transition"
+                className="w-full bg-base-200 border border-base-300 rounded-xl px-4 py-3 text-sm font-semibold text-base-content focus:outline-none focus:border-primary transition"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Category</label>
+              <label className="text-xs font-bold uppercase tracking-wider opacity-80">Category</label>
               <select
                 name="category"
                 required
-                className="w-full bg-neutral-50 border border-neutral-300 rounded-xl px-4 py-3 text-sm font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 transition"
+                className="w-full bg-base-200 border border-base-300 rounded-xl px-4 py-3 text-sm font-semibold text-base-content focus:outline-none focus:border-primary transition"
               >
                 <option value="Photo Studio">Photo Studio</option>
                 <option value="Film Stage">Film Stage</option>
@@ -111,144 +110,140 @@ export default function AddStudioPage() {
             </div>
           </div>
 
-          {/* Rates & Capacity */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Hourly Rate TK </label>
+              <label className="text-xs font-bold uppercase tracking-wider opacity-80">Hourly Rate TK</label>
               <div className="relative">
                 <input
                   name="hourlyRate"
                   type="number"
                   placeholder="50"
                   required
-                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 transition"
+                  className="w-full bg-base-200 border border-base-300 rounded-xl px-4 py-3 text-sm font-semibold text-base-content focus:outline-none focus:border-primary transition"
                 />
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Security Deposit TK</label>
+              <label className="text-xs font-bold uppercase tracking-wider opacity-80">Security Deposit TK</label>
               <div className="relative">
                 <input
                   name="securityDeposit"
                   type="number"
                   placeholder="100"
                   required
-                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 transition"
+                  className="w-full bg-base-200 border border-base-300 rounded-xl px-4 py-3 text-sm font-semibold text-base-content focus:outline-none focus:border-primary transition"
                 />
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Max Capacity</label>
+              <label className="text-xs font-bold uppercase tracking-wider opacity-80">Max Capacity</label>
               <div className="relative">
-                <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50" />
                 <input
                   name="maxCapacity"
                   type="number"
                   placeholder="20"
                   required
-                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 transition"
+                  className="w-full bg-base-200 border border-base-300 rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-base-content focus:outline-none focus:border-primary transition"
                 />
               </div>
             </div>
           </div>
 
-          {/* Location */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Location / Address</label>
+            <label className="text-xs font-bold uppercase tracking-wider opacity-80">Location / Address</label>
             <div className="relative">
-              <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50" />
               <input
                 name="location"
                 type="text"
                 placeholder="e.g. 124 Creative Ave, Downtown, New York"
                 required
-                className="w-full bg-neutral-50 border border-neutral-300 rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 transition"
+                className="w-full bg-base-200 border border-base-300 rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-base-content focus:outline-none focus:border-primary transition"
               />
             </div>
           </div>
 
-          {/* Image URL Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Studio Image URL</label>
+            <label className="text-xs font-bold uppercase tracking-wider opacity-80">Studio Image URL</label>
             <div className="relative">
-              <ImageIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <ImageIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50" />
               <input
                 type="url"
                 value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
+                onChange={(e) => {
+                  setImageUrl(e.target.value);
+                  setPreviewFailed(false);
+                }}
                 placeholder="https://images.unsplash.com/photo-..."
                 required
-                className="w-full bg-neutral-50 border border-neutral-300 rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 transition"
+                className="w-full bg-base-200 border border-base-300 rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-base-content focus:outline-none focus:border-primary transition"
               />
             </div>
-            {/* Live Image Preview */}
-            {imageUrl && (
-              <div className="mt-3 relative w-full h-48 rounded-2xl overflow-hidden border border-neutral-200 bg-neutral-100">
-                <img
+            {imageUrl && !previewFailed && (
+              <div className="mt-3 relative w-full h-48 rounded-2xl overflow-hidden border border-base-300 bg-base-200">
+                <Image
                   src={imageUrl}
                   alt="Studio Preview"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = "none";
-                  }}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, 768px"
+                  className="object-cover"
+                  onError={() => setPreviewFailed(true)}
                 />
               </div>
             )}
           </div>
 
-          {/* Amenities */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Amenities (Comma separated)</label>
+            <label className="text-xs font-bold uppercase tracking-wider opacity-80">Amenities (Comma separated)</label>
             <div className="relative">
-              <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50" />
               <input
                 name="amenities"
                 type="text"
                 placeholder="Wi-Fi, 4K Lighting, Makeup Room, AC, Soundproof"
-                className="w-full bg-neutral-50 border border-neutral-300 rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 transition"
+                className="w-full bg-base-200 border border-base-300 rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-base-content focus:outline-none focus:border-primary transition"
               />
             </div>
           </div>
 
-          {/* Detailed Overview */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Detailed Overview</label>
+            <label className="text-xs font-bold uppercase tracking-wider opacity-80">Detailed Overview</label>
             <textarea
               name="overview"
               rows={4}
               placeholder="Describe your studio features, equipment included, rules, etc."
               required
-              className="w-full bg-neutral-50 border border-neutral-300 rounded-xl p-4 text-sm font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 transition"
+              className="w-full bg-base-200 border border-base-300 rounded-xl p-4 text-sm font-semibold text-base-content focus:outline-none focus:border-primary transition"
             ></textarea>
           </div>
 
-          {/* Read-only User Info */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-neutral-100 p-4 rounded-2xl border border-neutral-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-base-200 p-4 rounded-2xl border border-base-300">
             <div>
-              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Logged In Owner Name</label>
+              <label className="text-[10px] font-bold opacity-60 uppercase tracking-wider block">Logged In Owner Name</label>
               <input
                 type="text"
                 readOnly
                 value={user?.name || "Loading..."}
-                className="w-full bg-transparent text-sm font-bold text-neutral-900 focus:outline-none cursor-not-allowed mt-0.5"
+                className="w-full bg-transparent text-sm font-bold text-base-content focus:outline-none cursor-not-allowed mt-0.5"
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Logged In Owner Email</label>
+              <label className="text-[10px] font-bold opacity-60 uppercase tracking-wider block">Logged In Owner Email</label>
               <input
                 type="text"
                 readOnly
                 value={user?.email || "Loading..."}
-                className="w-full bg-transparent text-sm font-bold text-neutral-900 focus:outline-none cursor-not-allowed mt-0.5"
+                className="w-full bg-transparent text-sm font-bold text-base-content focus:outline-none cursor-not-allowed mt-0.5"
               />
             </div>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-neutral-900 text-white text-sm font-bold rounded-2xl shadow-lg hover:bg-neutral-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-4 bg-primary text-primary-content text-sm font-bold rounded-2xl shadow-lg hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Publish Studio Listing"}
           </button>

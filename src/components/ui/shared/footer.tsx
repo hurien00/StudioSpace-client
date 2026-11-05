@@ -4,10 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FormEvent, useState, useEffect } from "react";
+import { useState, useEffect, FormEvent } from "react";
 
 export default function Footer() {
-  const [currentYear, setCurrentYear] = useState<number>(2026);
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());
@@ -156,7 +156,7 @@ export default function Footer() {
 
         {/* Bottom Bar: Copyright & Terms Notice */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground gap-4">
-          <p>© {currentYear} StudioSpace. All rights reserved.</p>
+          <p>© {currentYear || "2026"} StudioSpace. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <Link href="/terms" className="hover:text-foreground transition-colors">Terms of use</Link>
             <span>·</span>

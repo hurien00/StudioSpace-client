@@ -63,7 +63,7 @@ export default function HowBookingWorks() {
 
       {/* Steps Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-        {steps.map((item, index) => (
+        {steps.map((item) => (
           <div
             key={item.step}
             className="group relative rounded-3xl p-8 bg-card border border-border shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500 flex flex-col justify-between overflow-hidden"

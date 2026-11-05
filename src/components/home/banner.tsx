@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination, EffectFade } from "swiper/modules";
+import { useIsClient } from "@/hooks/use-auth-user";
 
 // Import Swiper styles
 import "swiper/css";
@@ -11,11 +12,7 @@ import "swiper/css/pagination";
 import "swiper/css/effect-fade";
 
 export default function Banner() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsClient();
 
   const slides = [
     {
@@ -120,20 +117,20 @@ export default function Banner() {
       </div>
 
       {/* Stats Section (Below Banner) */}
-      <div className="mt-6 px-4 sm:px-6 flex flex-wrap items-center justify-between sm:justify-start gap-6 sm:gap-16 text-neutral-800">
+      <div className="mt-6 px-4 sm:px-6 flex flex-wrap items-center justify-between sm:justify-start gap-6 sm:gap-16 text-foreground">
         <div className="flex items-baseline gap-2">
-          <span className="text-lg sm:text-xl font-bold text-black tracking-tight">1,200+</span>
-          <span className="text-xs sm:text-sm text-neutral-500 font-medium">studios listed</span>
+          <span className="text-lg sm:text-xl font-bold text-foreground tracking-tight">1,200+</span>
+          <span className="text-xs sm:text-sm text-muted-foreground font-medium">studios listed</span>
         </div>
 
         <div className="flex items-baseline gap-2">
-          <span className="text-lg sm:text-xl font-bold text-black tracking-tight">4.8</span>
-          <span className="text-xs sm:text-sm text-neutral-500 font-medium">average rating</span>
+          <span className="text-lg sm:text-xl font-bold text-foreground tracking-tight">4.8</span>
+          <span className="text-xs sm:text-sm text-muted-foreground font-medium">average rating</span>
         </div>
 
         <div className="flex items-baseline gap-2">
-          <span className="text-lg sm:text-xl font-bold text-black tracking-tight">$18</span>
-          <span className="text-xs sm:text-sm text-neutral-500 font-medium">average starting rate per hour</span>
+          <span className="text-lg sm:text-xl font-bold text-foreground tracking-tight">$18</span>
+          <span className="text-xs sm:text-sm text-muted-foreground font-medium">average starting rate per hour</span>
         </div>
       </div>
     </section>

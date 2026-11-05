@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
@@ -12,6 +13,7 @@ import {
   Layers 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuthUser, useIsClient } from "@/hooks/use-auth-user";
 
 interface Booking {
   _id: string;
@@ -31,54 +33,62 @@ export default function MyBookingsClient() {
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const isClient = useIsClient();
+  const user = useAuthUser();
+  const userEmail = user?.email ?? null;
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) {
-     sessionStorage.setItem("redirectPath", window.location.pathname);
-    router.push("/login");
-    return;
-    }
+    if (!isClient || userEmail) return;
 
-    try {
-      const parsedUser = JSON.parse(storedUser);
-      if (parsedUser?.email) {
-        setUserEmail(parsedUser.email);
-      } else {
-        router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
-      }
-    } catch (error) {
-      console.error("Failed to parse user session data:", error);
-      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
-    }
-  }, [router]);
+    sessionStorage.setItem("redirectPath", window.location.pathname);
+    router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+  }, [isClient, userEmail, router]);
 
   useEffect(() => {
     if (!userEmail) return;
 
-    setLoading(true);
-    fetch(`http://localhost:8000/api/bookings?email=${userEmail}`)
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchBookings = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`http://localhost:8000/api/bookings?email=${encodeURIComponent(userEmail)}`, {
+          method: "GET",
+          credentials: "include", 
+        });
+
+        if (res.status === 401) {
+          router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+          return;
+        }
+
+        const data = await res.json();
         if (Array.isArray(data)) {
           setBookings(data);
         }
-        setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Error fetching bookings:", err);
+      } finally {
         setLoading(false);
-      });
-  }, [userEmail]);
+      }
+    };
+
+    fetchBookings();
+  }, [userEmail, router]);
 
   const handleCancelBooking = (id: string) => {
     setCancellingId(id);
 
     fetch(`http://localhost:8000/api/bookings/${id}/cancel`, {
       method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
     })
       .then((res) => {
+        if (res.status === 401) {
+          router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+          throw new Error("401 Unauthorized");
+        }
         if (!res.ok) throw new Error("Failed to cancel booking");
         return res.json();
       })
@@ -90,10 +100,11 @@ export default function MyBookingsClient() {
         );
         setToastMessage("Booking cancelled successfully!");
         setTimeout(() => setToastMessage(null), 3000);
-        setCancellingId(null);
       })
       .catch((err) => {
         console.error("Cancellation error:", err);
+      })
+      .finally(() => {
         setCancellingId(null);
       });
   };
@@ -162,7 +173,7 @@ export default function MyBookingsClient() {
           </div>
           <h3 className="text-xl font-bold text-foreground">No Bookings Found</h3>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            You haven't reserved any studio spaces yet. Explore available studios and book your slot!
+            You haven&apos;t reserved any studio spaces yet. Explore available studios and book your slot!
           </p>
           <Button className="rounded-full px-6 mt-2" asChild>
             <Link href="/studios">Explore Studios</Link>
@@ -177,10 +188,13 @@ export default function MyBookingsClient() {
             >
               <div>
                 <div className="relative h-48 w-full bg-muted">
-                  <img 
-                    src={booking.studioImage || "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0"} 
-                    alt={booking.studioTitle} 
-                    className="w-full h-full object-cover"
+                  <Image
+                    src={booking.studioImage || "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0"}
+                    alt={booking.studioTitle}
+                    fill
+                    unoptimized
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover"
                   />
                   <div className="absolute top-3 left-3">
                     {getStatusBadge(booking.status)}

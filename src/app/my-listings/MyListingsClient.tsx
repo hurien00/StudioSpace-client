@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
@@ -14,7 +15,7 @@ import {
   Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getStoredUser } from "@/lib/auth-session";
+import { useAuthUser, useIsClient } from "@/hooks/use-auth-user";
 
 interface Studio {
   _id: string;
@@ -32,7 +33,9 @@ export default function MyListingsClient() {
   const router = useRouter();
   const [listings, setListings] = useState<Studio[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const isClient = useIsClient();
+  const user = useAuthUser();
+  const userEmail = user?.email ?? null;
   
   // Delete Modal States
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -40,33 +43,39 @@ export default function MyListingsClient() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const fetchListings = (email: string) => {
-    setLoading(true);
-    fetch(`http://localhost:8000/api/studios/my-listings?email=${encodeURIComponent(email)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setListings(data);
-        }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching my listings:", err);
-        setLoading(false);
-      });
-  };
-
   useEffect(() => {
-    const storedUser = getStoredUser();
-    if (storedUser?.email) {
-      setUserEmail(storedUser.email);
-    } else {
+    if (isClient && !userEmail) {
       router.replace("/login?callbackUrl=/my-listings");
     }
-  }, [router]);
+  }, [isClient, userEmail, router]);
 
   useEffect(() => {
-    if (userEmail) fetchListings(userEmail);
+    if (!userEmail) return;
+
+    let cancelled = false;
+
+    const loadListings = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `http://localhost:8000/api/studios/my-listings?email=${encodeURIComponent(userEmail)}`
+        );
+        const data = await res.json();
+        if (!cancelled && Array.isArray(data)) {
+          setListings(data);
+        }
+      } catch (err) {
+        console.error("Error fetching my listings:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadListings();
+
+    return () => {
+      cancelled = true;
+    };
   }, [userEmail]);
 
   const confirmDelete = (id: string) => {
@@ -144,7 +153,7 @@ export default function MyListingsClient() {
           </div>
           <h3 className="text-xl font-bold text-foreground">No Listings Found</h3>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            You haven't added any studio spaces yet under your account ({userEmail}).
+            You haven&apos;t added any studio spaces yet under your account ({userEmail}).
           </p>
           <Button className="rounded-full px-6 mt-2" asChild>
             <Link href="/add-studio">Create Your First Listing</Link>
@@ -159,10 +168,13 @@ export default function MyListingsClient() {
             >
               <div>
                 <div className="relative h-48 w-full bg-muted">
-                  <img 
-                    src={studio.image || "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0"} 
-                    alt={studio.title} 
-                    className="w-full h-full object-cover"
+                  <Image
+                    src={studio.image || "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0"}
+                    alt={studio.title}
+                    fill
+                    unoptimized
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover"
                   />
                   <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-background/80 backdrop-blur-md text-foreground text-[10px] font-extrabold uppercase tracking-wider border border-border">
                     {studio.category}

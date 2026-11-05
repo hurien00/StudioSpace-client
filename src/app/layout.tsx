@@ -4,6 +4,7 @@ import "./globals.css";
 import { Suspense } from "react"; 
 import Navbar from "@/components/ui/shared/navbar";
 import Footer from "@/components/ui/shared/footer";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,6 +21,22 @@ export const metadata: Metadata = {
   description: "Discover, filter, and reserve top-tier creative workspaces, photography cyc walls, cinema sound stages, and music recording suites.",
 };
 
+// Runs before first paint so a saved dark theme never flashes light.
+const themeInitScript = `
+(function () {
+  try {
+    var stored = localStorage.getItem("theme");
+    var theme = stored === "light" || stored === "dark" ? stored : "system";
+    var dark =
+      theme === "dark" ||
+      (theme === "system" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.classList.toggle("dark", dark);
+    document.documentElement.style.colorScheme = dark ? "dark" : "light";
+  } catch (error) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: {
@@ -32,16 +49,23 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground transition-colors duration-300">
-        
-        <Suspense fallback={<div className="h-16 w-full bg-background" />}>
-          <Navbar />
-        </Suspense>
+        <script
+          id="theme-init"
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
 
-        <main className="grow">
-          {children}
-        </main>
-        
-        <Footer />
+        <ThemeProvider>
+          <Suspense fallback={<div className="h-16 w-full bg-background" />}>
+            <Navbar />
+          </Suspense>
+
+          <main className="grow">
+            {children}
+          </main>
+          
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );

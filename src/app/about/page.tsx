@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { 
   Building2, 
-  Users, 
   Sparkles, 
   Target, 
   ShieldCheck, 
@@ -110,10 +110,13 @@ export default function AboutPage() {
           </div>
 
           <div className="relative rounded-3xl overflow-hidden border border-border shadow-2xl bg-muted aspect-video md:aspect-square flex items-center justify-center group">
-            <img
+            <Image
               src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=1200&auto=format&fit=crop"
               alt="Creative Studio Setup"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              fill
+              unoptimized
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-700"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-8">
               <div className="text-white">

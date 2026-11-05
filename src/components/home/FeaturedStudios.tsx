@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Star, Heart } from "lucide-react";
 
@@ -65,10 +66,13 @@ export default function FeaturedStudios() {
             >
               {/* Image & Badges Container */}
               <div className="relative h-56 w-full bg-muted overflow-hidden group">
-                <img
+                <Image
                   src={studio.image}
                   alt={studio.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
 
                 {/* Category Badge */}

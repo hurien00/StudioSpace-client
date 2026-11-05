@@ -4,10 +4,12 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Sun, Moon, Menu, X, LogOut, LayoutDashboard, PlusCircle, List, Calendar, ChevronDown, User as UserIcon } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, PlusCircle, List, Calendar, ChevronDown, User as UserIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import ThemeToggle from "@/components/ui/shared/theme-toggle";
+import { authClient } from "@/lib/auth-client";
 import {
   AUTH_CHANGE_EVENT,
   clearSession,
@@ -30,17 +32,13 @@ interface NavbarProps {
 export default function Navbar({ user: propUser = null }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(propUser);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true);
-
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsProfileDropdownOpen(false);
@@ -50,15 +48,10 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Keep the navbar in sync with auth changes and client-side navigation.
-  // The layout never remounts on navigation, which is why the profile menu
-  // used to stay hidden until a full refresh.
   useEffect(() => {
     const syncUser = () => {
       const storedUser = getStoredUser();
 
-      // Heal sessions created before the auth cookie existed so the
-      // middleware stops bouncing logged-in users to /login.
       if (storedUser?.email) {
         setAuthCookie(storedUser.email);
       }
@@ -77,19 +70,15 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
     };
   }, [pathname, propUser]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Clear the local session immediately, then invalidate the Better Auth
+    // session cookie/record in the background.
     clearSession();
     setCurrentUser(null);
     setIsProfileDropdownOpen(false);
+    void authClient.signOut().catch(() => undefined);
     router.push("/login");
     router.refresh();
-  };
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    document.documentElement.classList.toggle("dark", newTheme === "dark");
   };
 
   const navLinks = [
@@ -114,7 +103,6 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
             <Image
               src="/images/Icon.png"
@@ -129,7 +117,6 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
             </span>
           </Link>
 
-          {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
@@ -152,25 +139,9 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
             })}
           </nav>
 
-          {/* Right Action Area */}
           <div className="hidden md:flex items-center gap-3">
-            {mounted && (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={toggleTheme}
-                className="rounded-full w-9 h-9"
-                aria-label="Toggle Theme"
-              >
-                {theme === "light" ? (
-                  <Moon className="w-4 h-4" />
-                ) : (
-                  <Sun className="w-4 h-4 text-yellow-400" />
-                )}
-              </Button>
-            )}
+            <ThemeToggle />
 
-            {/* Authenticated State with Custom Safe Dropdown */}
             {currentUser ? (
               <div className="relative" ref={dropdownRef}>
                 <button
@@ -185,7 +156,6 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
                   <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isProfileDropdownOpen ? "rotate-180" : ""}`} />
                 </button>
 
-                {/* Custom Dropdown Menu Card */}
                 {isProfileDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-60 bg-card border border-border rounded-2xl p-2 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2">
                     <div className="px-3 py-2.5 border-b border-border/60 mb-1">
@@ -260,18 +230,8 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
             )}
           </div>
 
-          {/* Mobile Menu Toggle Button */}
           <div className="flex md:hidden items-center gap-2">
-            {mounted && (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={toggleTheme}
-                className="rounded-full w-9 h-9"
-              >
-                {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4 text-yellow-400" />}
-              </Button>
-            )}
+            <ThemeToggle />
             <Button
               variant="ghost"
               size="icon"
@@ -283,7 +243,6 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
         </div>
       </div>
 
-      {/* Mobile Menu Drawer */}
       {isMobileMenuOpen && (
         <div className="md:hidden border-b border-border bg-background px-4 pt-2 pb-6 space-y-3">
           {navLinks.map((link) => (
@@ -311,7 +270,7 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
                   </div>
                 </div>
                 <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)} className="py-2.5 px-3 text-sm text-foreground flex items-center gap-2 hover:bg-muted rounded-xl">
-                  <UserIcon className="h-4 w-4 text-muted-foreground" /> আমার প্রোফাইল
+                  <UserIcon className="h-4 w-4 text-muted-foreground" /> My Profile
                 </Link>
                 <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="py-2.5 px-3 text-sm text-foreground flex items-center gap-2 hover:bg-muted rounded-xl">
                   <LayoutDashboard className="h-4 w-4 text-muted-foreground" /> Dashboard

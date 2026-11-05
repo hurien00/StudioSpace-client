@@ -25,5 +25,5 @@ async function StudioContent({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   const studioId = resolvedParams.id;
 
-  return <StudioDetailClient studioId={studioId} />;
+  return <StudioDetailClient key={studioId} studioId={studioId} />;
 }

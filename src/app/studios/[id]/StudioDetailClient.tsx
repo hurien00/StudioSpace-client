@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
@@ -17,7 +18,7 @@ import {
   UserCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface Studio {
   _id: string;
@@ -54,8 +55,6 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
 
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
-    setError(false);
 
     fetch(`http://localhost:8000/api/studios/${studioId}`, {
       cache: "no-store",
@@ -199,7 +198,14 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
             className="md:col-span-2 relative h-full bg-muted cursor-pointer group overflow-hidden"
             onClick={() => setSelectedImage(mainImage)}
           >
-            <img src={mainImage} alt={studio.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+            <Image
+              src={mainImage}
+              alt={studio.title}
+              fill
+              unoptimized
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover group-hover:scale-105 transition duration-500"
+            />
             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
               Click to Expand
             </div>
@@ -207,7 +213,14 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
           <div className="hidden md:grid md:col-span-2 grid-cols-2 gap-4 h-full">
             {galleryImages.slice(1, 5).map((img, index) => (
               <div key={index} className="relative h-full bg-muted cursor-pointer group overflow-hidden" onClick={() => setSelectedImage(img)}>
-                <img src={img} alt={`Studio image ${index + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                <Image
+                  src={img}
+                  alt={`Studio image ${index + 1}`}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, 25vw"
+                  className="object-cover group-hover:scale-105 transition duration-500"
+                />
               </div>
             ))}
           </div>
@@ -341,7 +354,16 @@ export default function StudioDetailClient({ studioId }: { studioId: string }) {
 
       {selectedImage && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-pointer" onClick={() => setSelectedImage(null)}>
-          <img src={selectedImage} alt="Preview" className="max-w-full max-h-[90vh] rounded-2xl object-contain" />
+          <div className="relative w-full h-[90vh]">
+            <Image
+              src={selectedImage}
+              alt="Preview"
+              fill
+              unoptimized
+              sizes="100vw"
+              className="object-contain"
+            />
+          </div>
         </div>
       )}
     </div>

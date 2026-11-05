@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Star, Heart, MapPin, ArrowLeft } from "lucide-react";
 import { fromSlug } from "@/lib/utils";
@@ -107,10 +108,13 @@ export default function CategoryClientContent({ slug }: { slug: string }) {
                 className="bg-card text-card-foreground rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between"
               >
                 <div className="relative h-56 w-full bg-muted overflow-hidden group">
-                  <img
+                  <Image
                     src={studio.image}
                     alt={studio.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    fill
+                    unoptimized
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <span className="absolute top-3 left-3 bg-background/90 text-foreground backdrop-blur-md text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
                     {studio.category}
